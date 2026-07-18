@@ -106,54 +106,79 @@
 		</div><!--- END CONTAINER -->
 	</section>
 	<!-- END ADDRESS -->
-
 	<!-- CONTACT -->
 	<div id="contact" class="contact_area section-padding">
 		<div class="container">
-			<div class="row">
-				<div class="col-lg-7 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s"
-					data-wow-offset="0">
-					<div class="contact">
-						<form class="form" name="enq" method="post" action="contact.php"
-							onsubmit="return validation();">
-							<div class="row">
-								<div class="form-group col-md-6">
-									<label for="">Name</label>
-									<input type="text" name="name" class="form-control" required="required">
+			<div class="row align-items-stretch g-4">
+
+				<!-- Contact Form -->
+				<div class="col-lg-7 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s">
+					<div class="card shadow border-0 rounded-4 h-100">
+						<div class="card-body p-4">
+
+							<h3 class="mb-4 text-center">Contact Us</h3>
+
+							<form class="form" name="enq" method="post" action="contact.php"
+								onsubmit="return validation();">
+
+								<div class="row g-3">
+
+									<div class="col-md-6">
+										<label class="form-label fw-semibold">Name</label>
+										<input type="text" name="name" class="form-control bg-light"
+											placeholder="Enter your name" required>
+									</div>
+
+									<div class="col-md-6">
+										<label class="form-label fw-semibold">Email</label>
+										<input type="email" name="email" class="form-control bg-light"
+											placeholder="Enter your email" required>
+									</div>
+
+									<div class="col-12">
+										<label class="form-label fw-semibold">Subject</label>
+										<input type="text" name="subject" class="form-control bg-light"
+											placeholder="Enter subject" required>
+									</div>
+
+									<div class="col-12">
+										<label class="form-label fw-semibold">Message</label>
+										<textarea name="message" class="form-control bg-light" rows="6"
+											placeholder="Write your message here..." required></textarea>
+									</div>
+
+									<div class="col-12 text-center mt-3">
+										<button type="submit" name="submit" id="submitButton"
+											class="btn btn-primary px-5 py-2">
+											Send Message
+										</button>
+									</div>
+
 								</div>
-								<div class="form-group col-md-6">
-									<label for="">Your Email</label>
-									<input type="email" name="email" class="form-control" required="required">
-								</div>
-								<div class="form-group col-md-12">
-									<label for="">Your Subject</label>
-									<input type="text" name="subject" class="form-control" required="required">
-								</div>
-								<div class="form-group col-md-12">
-									<label for="">Your Message</label>
-									<textarea rows="6" name="message" class="form-control"
-										required="required"></textarea>
-								</div>
-								<div class="col-md-12 text-center">
-									<button type="submit" value="Send message" name="submit" id="submitButton"
-										class="btn_one" title="Submit Your Message!">Send Message</button>
-								</div>
-							</div>
-						</form>
+
+							</form>
+
+						</div>
 					</div>
-				</div><!-- END COL  -->
-				<div class="col-lg-5 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s"
-					data-wow-offset="0">
-					<div class="map">
+				</div>
+
+				<!-- Google Map -->
+				<div class="col-lg-5 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.3s">
+					<div class="card shadow border-0 rounded-4 h-100 overflow-hidden">
+
 						<iframe
-							src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3670.900446939916!2d72.4397274!3d23.064111099999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e9c1732514939%3A0xefe384ba0a79209c!2sIndus%20University!5e0!3m2!1sen!2sin!4v1784370069099!5m2!1sen!2sin"
-							width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
-							referrerpolicy="strict-origin-when-cross-origin"></iframe>
+							src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3670.900446939916!2d72.4397274!3d23.064111099999998!2m3!1f0!3f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e9c1732514939%3A0xefe384ba0a79209c!2sIndus%20University!5e0!3m2!1sen!2sin!4v1784370069099!5m2!1sen!2sin"
+							width="100%" height="100%" style="border:0; min-height:500px;" allowfullscreen=""
+							loading="lazy" referrerpolicy="strict-origin-when-cross-origin">
+						</iframe>
+
 					</div>
-				</div><!-- END COL  -->
-			</div><!-- END ROW -->
-		</div><!--- END CONTAINER -->
+				</div>
+
+			</div>
+		</div>
 	</div>
+	<!-- END CONTACT -->
 	<!-- END CONTACT -->
 
 	<!-- FOOTER PLACEHOLDER -->
@@ -183,7 +208,7 @@
 
 	<!-- Load Components -->
 	<script>
-		document.addEventListener("DOMContentLoaded", function() {
+		document.addEventListener("DOMContentLoaded", function () {
 			fetch('components/navbar.html')
 				.then(response => response.text())
 				.then(data => {
