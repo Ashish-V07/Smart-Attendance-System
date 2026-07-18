@@ -1,0 +1,33 @@
+	<aside class="sidebar" id="sidebar">
+		<div class="logo-wrapper">
+			<!-- Replace with actual logo if needed -->
+			<h4>Smart<span>Attend</span></h4>
+		</div>
+		<ul class="sidebar-menu" id="adminSidebarMenu">
+			<li><a href="admin_dashboard.html"><i class="ti-dashboard"></i> Dashboard</a></li>
+			<li><a href="#"><i class="ti-user"></i> Student Management</a></li>
+			<li><a href="#"><i class="ti-id-badge"></i> Faculty Management</a></li>
+			<li><a href="#"><i class="ti-book"></i> Class & Subject</a></li>
+			<li><a href="#"><i class="ti-calendar"></i> Attendance Tracking</a></li>
+			<li><a href="#"><i class="ti-bar-chart"></i> Reports & Analytics</a></li>
+			<li><a href="face_registration.html"><i class="ti-face-smile"></i> Face Registration</a></li>
+			<li style="margin-top: 30px;"><a href="Admin-profile.html"><i class="ti-settings"></i> Profile Settings</a></li>
+			<li><a href="login.html"><i class="ti-power-off"></i> Logout</a></li>
+		</ul>
+	</aside>
+
+	<script>
+		// Highlight active menu item based on current URL
+		document.addEventListener("DOMContentLoaded", function() {
+			const currentUrl = window.location.pathname.split('/').pop();
+			const menuItems = document.querySelectorAll('#adminSidebarMenu li a');
+			menuItems.forEach(item => {
+				const itemUrl = item.getAttribute('href');
+				if (itemUrl === currentUrl || (currentUrl === '' && itemUrl === 'admin_dashboard.html')) {
+					item.parentElement.classList.add('active');
+				} else {
+					item.parentElement.classList.remove('active');
+				}
+			});
+		});
+	</script>

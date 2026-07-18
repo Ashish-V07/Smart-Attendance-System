@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Face Registration - Smart Attendance System</title>
+	
+	<!-- Latest Bootstrap min CSS -->
+	<link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+	<!-- Google Font -->
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+	<!-- Font Awesome & Themify Icons -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+	<link rel="stylesheet" href="assets/fonts/themify-icons.css">
+	<!-- Custom CSS for Dashboard -->
+	<style>
+		:root {
+			--primary-color: #35ac39;
+			--secondary-color: #1a2237;
+			--bg-light: #f4f7f6;
+			--text-dark: #333;
+			--text-muted: #888;
+			--sidebar-width: 260px;
+		}
+		
+		body {
+			font-family: 'DM Sans', sans-serif;
+			background-color: var(--bg-light);
+			margin: 0;
+			overflow-x: hidden;
+		}
+
+		/* Sidebar Styles */
+		.sidebar {
+			position: fixed;
+			top: 0;
+			left: 0;
+			height: 100vh;
+			width: var(--sidebar-width);
+			background-color: var(--secondary-color);
+			color: #fff;
+			padding-top: 20px;
+			z-index: 1000;
+			transition: all 0.3s ease;
+			box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+		}
+		
+		.sidebar .logo-wrapper {
+			text-align: center;
+			padding-bottom: 20px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+			margin-bottom: 20px;
+		}
+		
+		.sidebar .logo-wrapper h4 {
+			color: #fff;
+			margin-top: 10px;
+			font-weight: 700;
+			letter-spacing: 1px;
+		}
+		
+		.sidebar .logo-wrapper h4 span {
+			color: var(--primary-color);
+		}
+
+		.sidebar-menu {
+			list-style: none;
+			padding: 0;
+			margin: 0;
+		}
+
+		.sidebar-menu li {
+			padding: 5px 20px;
+		}
+
+		.sidebar-menu li a {
+			color: #b0bec5;
+			text-decoration: none;
+			display: flex;
+			align-items: center;
+			padding: 12px 15px;
+			border-radius: 8px;
+			transition: all 0.3s ease;
+			font-size: 15px;
+		}
+
+		.sidebar-menu li a i {
+			margin-right: 15px;
+			font-size: 18px;
+			width: 20px;
+			text-align: center;
+		}
+
+		.sidebar-menu li a:hover,
+		.sidebar-menu li.active a {
+			background-color: var(--primary-color);
+			color: #fff;
+		}
+
+		/* Main Content Styles */
+		.main-content {
+			margin-left: var(--sidebar-width);
+			padding: 0;
+			min-height: 100vh;
+			transition: all 0.3s ease;
+		}
+
+		/* Top Header */
+		.top-header {
+			background-color: #fff;
+			height: 70px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0 30px;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+			position: sticky;
+			top: 0;
+			z-index: 999;
+		}
+
+		.header-search {
+			position: relative;
+			width: 300px;
+		}
+		
+		.header-search input {
+			width: 100%;
+			padding: 10px 15px 10px 40px;
+			border: 1px solid #e0e0e0;
+			border-radius: 20px;
+			outline: none;
+			background-color: #f9f9f9;
+		}
+		
+		.header-search i {
+			position: absolute;
+			left: 15px;
+			top: 12px;
+			color: var(--text-muted);
+		}
+
+		.header-actions {
+			display: flex;
+			align-items: center;
+		}
+
+		.header-actions .icon-btn {
+			background: none;
+			border: none;
+			font-size: 20px;
+			color: var(--text-muted);
+			margin-right: 20px;
+			position: relative;
+			cursor: pointer;
+		}
+
+		.icon-btn .badge {
+			position: absolute;
+			top: -5px;
+			right: -5px;
+			background-color: #ef5350;
+			color: #fff;
+			font-size: 10px;
+			border-radius: 50%;
+			padding: 3px 6px;
+		}
+
+		.user-profile {
+			display: flex;
+			align-items: center;
+			cursor: pointer;
+		}
+
+		.user-profile img {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			margin-right: 10px;
+			object-fit: cover;
+		}
+
+		/* Dashboard Container */
+		.dashboard-container {
+			padding: 30px;
+		}
+
+		.page-title {
+			margin-bottom: 30px;
+		}
+
+		.page-title h2 {
+			font-size: 24px;
+			font-weight: 700;
+			color: var(--text-dark);
+			margin: 0;
+		}
+
+		/* Custom Cards for Face Registration */
+		.reg-card {
+			background: #fff;
+			border-radius: 12px;
+			padding: 30px;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+			border: 1px solid #f0f0f0;
+			height: 100%;
+		}
+
+		.card-title {
+			font-size: 18px;
+			font-weight: 700;
+			border-bottom: 1px solid #f0f0f0;
+			padding-bottom: 15px;
+			margin-bottom: 20px;
+		}
+
+		.form-group label {
+			font-weight: 600;
+			color: var(--text-dark);
+			margin-bottom: 8px;
+		}
+
+		.form-control, .form-select {
+			border-radius: 6px;
+			padding: 10px 15px;
+			border: 1px solid #e0e0e0;
+			background-color: #fcfcfc;
+			width: 100%;
+		}
+
+		.form-control:focus, .form-select:focus {
+			border-color: var(--primary-color);
+			box-shadow: none;
+			background-color: #fff;
+			outline: none;
+		}
+
+		.btn-custom {
+			background-color: var(--primary-color);
+			color: #fff;
+			border: none;
+			padding: 10px 24px;
+			border-radius: 6px;
+			font-size: 15px;
+			font-weight: 600;
+			transition: all 0.3s;
+			width: 100%;
+			cursor: pointer;
+		}
+		
+		.btn-custom:hover {
+			background-color: #2b8b2d;
+			color: #fff;
+		}
+
+		.btn-outline {
+			background-color: transparent;
+			color: var(--primary-color);
+			border: 2px solid var(--primary-color);
+			padding: 8px 24px;
+			border-radius: 6px;
+			font-size: 15px;
+			font-weight: 600;
+			transition: all 0.3s;
+			width: 100%;
+			cursor: pointer;
+		}
+
+		.btn-outline:hover {
+			background-color: var(--primary-color);
+			color: #fff;
+		}
+
+		/* Camera Area Styles */
+		.camera-wrapper {
+			position: relative;
+			width: 100%;
+			max-width: 500px;
+			margin: 0 auto;
+			border-radius: 12px;
+			overflow: hidden;
+			background-color: #000;
+			aspect-ratio: 4/3;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		#videoElement {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		#canvasElement {
+			display: none;
+		}
+
+		.camera-overlay {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 60%;
+			height: 70%;
+			border: 2px dashed rgba(255, 255, 255, 0.6);
+			border-radius: 50%;
+			pointer-events: none; /* Let clicks pass through */
+		}
+		
+		.instruction-text {
+			color: var(--text-muted);
+			font-size: 14px;
+			margin-top: 15px;
+			text-align: center;
+		}
+
+		/* Mobile menu toggle */
+		.mobile-toggle {
+			display: none;
+			font-size: 24px;
+			cursor: pointer;
+			color: var(--text-dark);
+		}
+
+		@media (max-width: 991px) {
+			.sidebar {
+				transform: translateX(-100%);
+			}
+			.main-content {
+				margin-left: 0;
+			}
+			.mobile-toggle {
+				display: block;
+			}
+			.header-search {
+				display: none;
+			}
+			/* When sidebar is active on mobile */
+			.sidebar.active {
+				transform: translateX(0);
+			}
+			.reg-card {
+				margin-bottom: 20px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+
+	<!-- SIDEBAR PLACEHOLDER -->
+	<div id="sidebar-placeholder"></div>
+	<!-- END SIDEBAR PLACEHOLDER -->
+
+	<!-- Main Content -->
+	<main class="main-content" id="main-content">
+		<!-- HEADER PLACEHOLDER -->
+	<div id="header-placeholder"></div>
+	<!-- END HEADER PLACEHOLDER -->
+
+		<!-- Dashboard Content Area -->
+		<div class="dashboard-container">
+			<div class="page-title">
+				<h2>New Face Registration</h2>
+			</div>
+
+			<!-- Flash message placeholder for Flask backend -->
+			<!-- In Flask, you would loop through get_flashed_messages() here -->
+			<div id="alertPlaceholder"></div>
+
+			<div class="row">
+				<!-- Registration Details Form -->
+				<div class="col-lg-5 mb-4">
+					<div class="reg-card">
+						<h4 class="card-title">User Information</h4>
+						
+						<!-- Form is ready for Flask POST request -->
+						<!-- Adding an ID so JavaScript can intercept or submit via AJAX/Fetch API -->
+						<form id="registrationForm" method="POST" action="/register_face">
+							<div class="row">
+								<div class="col-md-12 mb-3">
+									<div class="form-group">
+										<label>Role</label>
+										<select name="role" id="userRole" class="form-select" required>
+											<option value="" disabled selected>Select Role</option>
+											<option value="student">Student</option>
+											<option value="faculty">Faculty</option>
+											<option value="staff">Staff</option>
+										</select>
+									</div>
+								</div>
+								
+								<div class="col-md-12 mb-3">
+									<div class="form-group">
+										<label>User ID (Enrollment/Employee No.)</label>
+										<input type="text" name="user_id" id="userId" class="form-control" placeholder="e.g., STU-2026-001" required>
+									</div>
+								</div>
+
+								<div class="col-md-12 mb-3">
+									<div class="form-group">
+										<label>Full Name</label>
+										<input type="text" name="full_name" id="fullName" class="form-control" placeholder="Enter full name" required>
+									</div>
+								</div>
+								
+								<div class="col-md-12 mb-4">
+									<div class="form-group">
+										<label>Department / Course</label>
+										<input type="text" name="department" id="department" class="form-control" placeholder="e.g., B.Tech Computer Science">
+									</div>
+								</div>
+
+								<!-- Hidden input to store captured face data (Base64) to send to Flask backend -->
+								<input type="hidden" name="face_data" id="faceData">
+
+								<div class="col-md-12">
+									<button type="submit" id="submitBtn" class="btn-custom" disabled>Complete Registration</button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+
+				<!-- Camera Feed and Capture Area -->
+				<div class="col-lg-7 mb-4">
+					<div class="reg-card">
+						<h4 class="card-title text-center">Face Capture</h4>
+						
+						<div class="camera-wrapper">
+							<!-- Video feed from webcam -->
+							<video id="videoElement" autoplay playsinline></video>
+							<!-- Canvas to hold the captured snapshot temporarily -->
+							<canvas id="canvasElement"></canvas>
+							<!-- Visual guide for face positioning -->
+							<div class="camera-overlay"></div>
+						</div>
+						
+						<p class="instruction-text">
+							<i class="ti-info-alt text-primary"></i> Please ensure the user's face is clearly visible inside the oval guide, with adequate lighting.
+						</p>
+
+						<div class="row mt-4">
+							<div class="col-sm-6 mb-2">
+								<button type="button" id="startCameraBtn" class="btn-outline">
+									<i class="ti-video-camera"></i> Start Camera
+								</button>
+							</div>
+							<div class="col-sm-6 mb-2">
+								<button type="button" id="captureBtn" class="btn-custom" disabled>
+									<i class="ti-camera"></i> Capture Photo
+								</button>
+							</div>
+						</div>
+						
+						<!-- Status indicator -->
+						<div class="text-center mt-3" id="captureStatus" style="display: none;">
+							<span class="badge bg-success" style="font-size: 14px; padding: 8px 12px;">
+								<i class="ti-check"></i> Image Captured Successfully
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<!-- Latest jQuery -->
+	<script src="assets/js/jquery-1.12.4.min.js"></script>
+	<!-- Latest compiled and minified Bootstrap -->
+	<script src="assets/bootstrap/js/bootstrap.min.js"></script>
+	
+	<!-- Dashboard Interactivity and Camera Logic -->
+	<script>
+		// --- Sidebar Toggle ---
+		$(document).ready(function(){
+			$('#mobile-toggle').click(function(){
+				$('#sidebar').toggleClass('active');
+			});
+		});
+
+		// --- Camera and Capture Logic for Flask Backend ---
+		const video = document.getElementById('videoElement');
+		const canvas = document.getElementById('canvasElement');
+		const startCameraBtn = document.getElementById('startCameraBtn');
+		const captureBtn = document.getElementById('captureBtn');
+		const submitBtn = document.getElementById('submitBtn');
+		const faceDataInput = document.getElementById('faceData');
+		const captureStatus = document.getElementById('captureStatus');
+		let stream = null;
+
+		// Start Camera function
+		startCameraBtn.addEventListener('click', async () => {
+			try {
+				stream = await navigator.mediaDevices.getUserMedia({ 
+					video: { width: 640, height: 480, facingMode: "user" } 
+				});
+				video.srcObject = stream;
+				captureBtn.disabled = false;
+				startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Camera Active';
+				startCameraBtn.classList.add('disabled');
+				
+				// Hide previous capture status
+				captureStatus.style.display = 'none';
+				submitBtn.disabled = true; // Disable submit until new photo is captured
+			} catch (err) {
+				console.error("Error accessing webcam: ", err);
+				alert("Could not access the webcam. Please ensure you have granted permission.");
+			}
+		});
+
+		// Capture Photo function
+		captureBtn.addEventListener('click', () => {
+			if (!stream) return;
+			
+			// Set canvas dimensions to match video
+			canvas.width = video.videoWidth;
+			canvas.height = video.videoHeight;
+			
+			// Draw the current video frame onto the canvas
+			const context = canvas.getContext('2d');
+			context.drawImage(video, 0, 0, canvas.width, canvas.height);
+			
+			// Convert canvas image to Base64 data URL (JPEG format is usually best for face rec)
+			const imageDataURL = canvas.toDataURL('image/jpeg', 0.9);
+			
+			// Store it in the hidden input for the form submission
+			faceDataInput.value = imageDataURL;
+			
+			// Show success indicator and enable form submission
+			captureStatus.style.display = 'block';
+			submitBtn.disabled = false;
+			
+			// Optional: Pause video to freeze on the captured frame
+			// video.pause(); 
+		});
+
+		// Optional: Form submit handler if you prefer AJAX over standard POST
+		const registrationForm = document.getElementById('registrationForm');
+		registrationForm.addEventListener('submit', function(e) {
+			// Since we have a backend in mind, we can let standard POST happen 
+			// because the Base64 data is in the hidden input.
+			
+			// If you prefer Fetch API (AJAX) for Flask to avoid page reload, uncomment below:
+			/*
+			e.preventDefault();
+			const formData = new FormData(this);
+			
+			fetch('/register_face', {
+				method: 'POST',
+				body: formData
+			})
+			.then(response => response.json())
+			.then(data => {
+				if(data.success) {
+					alert("User registered successfully!");
+					// Reset form and camera state
+					this.reset();
+					captureStatus.style.display = 'none';
+					submitBtn.disabled = true;
+				} else {
+					alert("Registration failed: " + data.message);
+				}
+			})
+			.catch(error => {
+				console.error('Error:', error);
+			});
+			*/
+		});
+	</script>
+
+	<!-- Load Components -->
+	<script>
+		document.addEventListener("DOMContentLoaded", function() {
+			fetch('components/admin_sidebar.html')
+				.then(response => response.text())
+				.then(data => {
+					document.getElementById('sidebar-placeholder').innerHTML = data;
+					
+					// Re-initialize sidebar logic here since it's loaded dynamically
+					const currentUrl = window.location.pathname.split('/').pop();
+					const menuItems = document.querySelectorAll('#adminSidebarMenu li a');
+					menuItems.forEach(item => {
+						const itemUrl = item.getAttribute('href');
+						if (itemUrl === currentUrl || (currentUrl === '' && itemUrl === 'admin_dashboard.html')) {
+							item.parentElement.classList.add('active');
+						} else {
+							item.parentElement.classList.remove('active');
+						}
+					});
+				});
+
+			fetch('components/admin_header.html')
+				.then(response => response.text())
+				.then(data => {
+					document.getElementById('header-placeholder').innerHTML = data;
+					
+					// Re-attach mobile toggle event listener
+					setTimeout(() => {
+						const mobileToggle = document.getElementById('mobile-toggle');
+						if(mobileToggle) {
+							mobileToggle.addEventListener('click', function(){
+								document.getElementById('sidebar-placeholder').classList.toggle('active');
+								// Wait, the sidebar itself needs the active class. 
+								const sidebarObj = document.getElementById('sidebar');
+								if(sidebarObj) sidebarObj.classList.toggle('active');
+							});
+						}
+					}, 100);
+				});
+		});
+	</script>
+</body>
+</html>
