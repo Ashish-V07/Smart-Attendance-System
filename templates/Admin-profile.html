@@ -313,15 +313,11 @@
 
 <body>
 
-	<!-- SIDEBAR PLACEHOLDER -->
-	<div id="sidebar-placeholder"></div>
-	<!-- END SIDEBAR PLACEHOLDER -->
+	{% include "components/admin_sidebar.html" %}
 
 	<!-- Main Content -->
 	<main class="main-content" id="main-content">
-		<!-- HEADER PLACEHOLDER -->
-	<div id="header-placeholder"></div>
-	<!-- END HEADER PLACEHOLDER -->
+		{% include "components/admin_header.html" %}
 
 		<!-- Dashboard Content Area -->
 		<div class="dashboard-container">
@@ -434,47 +430,6 @@
 		});
 	</script>
 
-	<!-- Load Components -->
-	<script>
-		document.addEventListener("DOMContentLoaded", function() {
-			fetch('components/admin_sidebar.html')
-				.then(response => response.text())
-				.then(data => {
-					document.getElementById('sidebar-placeholder').innerHTML = data;
-					
-					// Re-initialize sidebar logic here since it's loaded dynamically
-					const currentUrl = window.location.pathname.split('/').pop();
-					const menuItems = document.querySelectorAll('#adminSidebarMenu li a');
-					menuItems.forEach(item => {
-						const itemUrl = item.getAttribute('href');
-						if (itemUrl === currentUrl || (currentUrl === '' && itemUrl === 'admin_dashboard.html')) {
-							item.parentElement.classList.add('active');
-						} else {
-							item.parentElement.classList.remove('active');
-						}
-					});
-				});
-
-			fetch('components/admin_header.html')
-				.then(response => response.text())
-				.then(data => {
-					document.getElementById('header-placeholder').innerHTML = data;
-					
-					// Re-attach mobile toggle event listener
-					setTimeout(() => {
-						const mobileToggle = document.getElementById('mobile-toggle');
-						if(mobileToggle) {
-							mobileToggle.addEventListener('click', function(){
-								document.getElementById('sidebar-placeholder').classList.toggle('active');
-								// Wait, the sidebar itself needs the active class. 
-								const sidebarObj = document.getElementById('sidebar');
-								if(sidebarObj) sidebarObj.classList.toggle('active');
-							});
-						}
-					}, 100);
-				});
-		});
-	</script>
-</body>
+	</body>
 
 </html>

@@ -52,9 +52,7 @@
 	</div>
 	<!-- END PRELOADER -->
 
-	<!-- NAVBAR PLACEHOLDER -->
-	<div id="navbar-placeholder"></div>
-	<!-- END NAVBAR PLACEHOLDER -->
+	{% include "components/navbar.html" %}
 
 	<!-- START SECTION TOP -->
 	<section class="section-top">
@@ -64,7 +62,7 @@
 					data-wow-offset="0">
 					<h1>Get In Touch</h1>
 					<ul>
-						<li><a href="index.html">Home</a></li>
+						<li><a href="/">Home</a></li>
 						<li> / Contact</li>
 					</ul>
 				</div><!-- //.HERO-TEXT -->
@@ -181,9 +179,7 @@
 	<!-- END CONTACT -->
 	<!-- END CONTACT -->
 
-	<!-- FOOTER PLACEHOLDER -->
-	<div id="footer-placeholder"></div>
-	<!-- END FOOTER PLACEHOLDER -->
+	{% include "components/footer.html" %}
 
 	<!-- Latest jQuery -->
 	<script src="assets/js/jquery-1.12.4.min.js"></script>
@@ -206,22 +202,6 @@
 	<!-- scripts js -->
 	<script src="assets/js/scripts.js"></script>
 
-	<!-- Load Components -->
-	<script>
-		document.addEventListener("DOMContentLoaded", function () {
-			fetch('components/navbar.html')
-				.then(response => response.text())
-				.then(data => {
-					document.getElementById('navbar-placeholder').innerHTML = data;
-				});
-
-			fetch('components/footer.html')
-				.then(response => response.text())
-				.then(data => {
-					document.getElementById('footer-placeholder').innerHTML = data;
-				});
-		});
-	</script>
 </body>
 
 </html>

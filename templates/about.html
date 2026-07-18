@@ -52,9 +52,7 @@
 	</div>
 	<!-- END PRELOADER -->
 
-	<!-- NAVBAR PLACEHOLDER -->
-	<div id="navbar-placeholder"></div>
-	<!-- END NAVBAR PLACEHOLDER -->
+	{% include "components/navbar.html" %}
 
 	<!-- START SECTION TOP -->
 	<section class="section-top">
@@ -64,7 +62,7 @@
 					data-wow-offset="0">
 					<h1>About</h1>
 					<ul>
-						<li><a href="index.html">Home</a></li>
+						<li><a href="/">Home</a></li>
 						<li> / About</li>
 					</ul>
 				</div><!-- //.HERO-TEXT -->
@@ -81,16 +79,26 @@
 				<p>Driving innovation in administrative technology.</p>
 			</div>
 			<div class="row">
-				<div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.1s" data-wow-offset="0">
-					<div class="single_mission" style="background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); height: 100%;">
-						<h3 style="color: #35ac39; margin-bottom: 20px;"><i class="ti-target" style="font-size: 24px; margin-right: 10px;"></i> Our Mission</h3>
-						<p>To revolutionize attendance tracking and administrative processes globally by providing the most accurate, secure, and user-friendly automated systems. We strive to save time for educators and professionals so they can focus on what truly matters.</p>
+				<div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.1s"
+					data-wow-offset="0">
+					<div class="single_mission"
+						style="background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); height: 100%;">
+						<h3 style="color: #35ac39; margin-bottom: 20px;"><i class="ti-target"
+								style="font-size: 24px; margin-right: 10px;"></i> Our Mission</h3>
+						<p>To revolutionize attendance tracking and administrative processes globally by providing the
+							most accurate, secure, and user-friendly automated systems. We strive to save time for
+							educators and professionals so they can focus on what truly matters.</p>
 					</div>
 				</div>
-				<div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s" data-wow-offset="0">
-					<div class="single_mission" style="background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); height: 100%;">
-						<h3 style="color: #35ac39; margin-bottom: 20px;"><i class="ti-eye" style="font-size: 24px; margin-right: 10px;"></i> Our Vision</h3>
-						<p>To be the world's leading provider of AI-powered organizational management solutions, creating a future where administrative bottlenecks are entirely eliminated through seamless technology integration.</p>
+				<div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s"
+					data-wow-offset="0">
+					<div class="single_mission"
+						style="background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); height: 100%;">
+						<h3 style="color: #35ac39; margin-bottom: 20px;"><i class="ti-eye"
+								style="font-size: 24px; margin-right: 10px;"></i> Our Vision</h3>
+						<p>To be the world's leading provider of AI-powered organizational management solutions,
+							creating a future where administrative bottlenecks are entirely eliminated through seamless
+							technology integration.</p>
 					</div>
 				</div>
 			</div>
@@ -124,7 +132,7 @@
 							<li><span class="ti-check"></span> Intuitive dashboard for faculty, students, and
 								administrators</li>
 						</ul>
-						<a class="btn_one" href="contact.html">Get Started <i class="ti-arrow-top-right"></i></a>
+						<a class="btn_one" href="contact">Get Started <i class="ti-arrow-top-right"></i></a>
 					</div>
 				</div><!--- END COL -->
 			</div><!--- END ROW -->
@@ -176,9 +184,7 @@
 
 
 
-	<!-- FOOTER PLACEHOLDER -->
-	<div id="footer-placeholder"></div>
-	<!-- END FOOTER PLACEHOLDER -->
+	{% include "components/footer.html" %}
 
 	<!-- Latest jQuery -->
 	<script src="assets/js/jquery-1.12.4.min.js"></script>
@@ -201,22 +207,6 @@
 	<!-- scripts js -->
 	<script src="assets/js/scripts.js"></script>
 
-	<!-- Load Components -->
-	<script>
-		document.addEventListener("DOMContentLoaded", function () {
-			fetch('components/navbar.html')
-				.then(response => response.text())
-				.then(data => {
-					document.getElementById('navbar-placeholder').innerHTML = data;
-				});
-
-			fetch('components/footer.html')
-				.then(response => response.text())
-				.then(data => {
-					document.getElementById('footer-placeholder').innerHTML = data;
-				});
-		});
-	</script>
 </body>
 
 </html>

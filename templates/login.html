@@ -52,9 +52,7 @@
 	</div>
 	<!-- END PRELOADER -->
 
-	<!-- NAVBAR PLACEHOLDER -->
-	<div id="navbar-placeholder"></div>
-	<!-- END NAVBAR PLACEHOLDER -->
+	{% include "components/navbar.html" %}
 
 	<!-- START SECTION TOP -->
 	<section class="section-top">
@@ -64,7 +62,7 @@
 					data-wow-offset="0">
 					<h1>Sign In</h1>
 					<ul>
-						<li><a href="index.html">Home</a></li>
+						<li><a href="/">Home</a></li>
 						<li> / Sign In</li>
 					</ul>
 				</div><!-- //.HERO-TEXT -->
@@ -79,24 +77,28 @@
 			<div class="row justify-content-center">
 				<div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s"
 					data-wow-offset="0">
-					<div class="contact" style="background: #f9f9f9; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+					<div class="contact"
+						style="background: #f9f9f9; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
 						<h3 class="text-center mb-4" style="margin-bottom: 30px; font-weight: 600;">Account Sign In</h3>
 						<form class="form" name="login" method="post" action="#">
 							<div class="row">
 								<div class="form-group col-md-12">
 									<label for="">Email Address</label>
-									<input type="email" name="email" class="form-control" required="required" placeholder="Enter your email">
+									<input type="email" name="email" class="form-control" required="required"
+										placeholder="Enter your email">
 								</div>
 								<div class="form-group col-md-12">
 									<label for="">Password</label>
-									<input type="password" name="password" class="form-control" required="required" placeholder="Enter your password">
+									<input type="password" name="password" class="form-control" required="required"
+										placeholder="Enter your password">
 								</div>
 								<div class="col-md-12 text-center" style="margin-top: 15px;">
-									<button type="submit" value="Sign In" name="submit"
-										class="btn_one" style="width: 100%;" title="Sign In">Sign In</button>
+									<button type="submit" value="Sign In" name="submit" class="btn_one"
+										style="width: 100%;" title="Sign In">Sign In</button>
 								</div>
 								<div class="col-md-12 text-center mt-3" style="margin-top: 15px;">
-									<a href="forgot-password.html" style="color: #666; font-size: 14px;">Forgot your password?</a>
+									<a href="forgot-password" style="color: #666; font-size: 14px;">Forgot your
+										password?</a>
 								</div>
 							</div>
 						</form>
@@ -107,9 +109,7 @@
 	</div>
 	<!-- END LOGIN -->
 
-	<!-- FOOTER PLACEHOLDER -->
-	<div id="footer-placeholder"></div>
-	<!-- END FOOTER PLACEHOLDER -->
+	{% include "components/footer.html" %}
 
 	<!-- Latest jQuery -->
 	<script src="assets/js/jquery-1.12.4.min.js"></script>
@@ -132,22 +132,6 @@
 	<!-- scripts js -->
 	<script src="assets/js/scripts.js"></script>
 
-	<!-- Load Components -->
-	<script>
-		document.addEventListener("DOMContentLoaded", function() {
-			fetch('components/navbar.html')
-				.then(response => response.text())
-				.then(data => {
-					document.getElementById('navbar-placeholder').innerHTML = data;
-				});
-
-			fetch('components/footer.html')
-				.then(response => response.text())
-				.then(data => {
-					document.getElementById('footer-placeholder').innerHTML = data;
-				});
-		});
-	</script>
 </body>
 
 </html>
