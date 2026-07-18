@@ -4,7 +4,7 @@
 	<meta charset="UTF-8">
 	<title>Your Mail Has Been Send Successfully.</title>
 			<!-- Latest Bootstrap min CSS -->
-		<link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">	
+		<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">	
 	<style>
 		.welcome-area {
 			position: relative;
@@ -46,7 +46,7 @@
 </head>
 
 <body>
-	<section class="welcome-area"  style="background-image: url(assets/img/bg/1.jpg);  background-size:cover; background-position: center center;">
+	<section class="welcome-area"  style="background-image: url({{ url_for('static', filename='img/bg/1.jpg') }});  background-size:cover; background-position: center center;">
 		<div class="container">
 			<div class="row">
 				<div class="col-lg-8 offset-lg-2 col-sm-12 col-xs-12 text-center">
@@ -60,9 +60,9 @@
 	</section>
 		
 		<!-- Latest jQuery -->
-		<script src="assets/js/jquery-1.12.4.min.js"></script>
+		<script src="{{ url_for('static', filename='js/jquery-1.12.4.min.js') }}"></script>
 		<!-- Latest compiled and minified Bootstrap -->
-			<script src="assets/bootstrap/js/bootstrap.min.js"></script>
+			<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
 
 	</body>
 </html>

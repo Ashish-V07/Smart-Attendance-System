@@ -7,12 +7,12 @@
 	<title>Face Registration - Smart Attendance System</title>
 	
 	<!-- Latest Bootstrap min CSS -->
-	<link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
 	<!-- Google Font -->
 	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 	<!-- Font Awesome & Themify Icons -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-	<link rel="stylesheet" href="assets/fonts/themify-icons.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='fonts/themify-icons.css') }}">
 	<!-- Custom CSS for Dashboard -->
 	<style>
 		:root {
@@ -464,9 +464,9 @@
 	</main>
 
 	<!-- Latest jQuery -->
-	<script src="assets/js/jquery-1.12.4.min.js"></script>
+	<script src="{{ url_for('static', filename='js/jquery-1.12.4.min.js') }}"></script>
 	<!-- Latest compiled and minified Bootstrap -->
-	<script src="assets/bootstrap/js/bootstrap.min.js"></script>
+	<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
 	
 	<!-- Dashboard Interactivity and Camera Logic -->
 	<script>
