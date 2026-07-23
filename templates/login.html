@@ -46,6 +46,8 @@
 
 <body data-spy="scroll" data-offset="80">
 
+
+	{% include "components/Error_Show.html" %}
 	<!-- START PRELOADER -->
 	<div class="preloaders">
 		<span class="loader"></span>
@@ -80,7 +82,7 @@
 					<div class="contact"
 						style="background: #f9f9f9; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
 						<h3 class="text-center mb-4" style="margin-bottom: 30px; font-weight: 600;">Account Sign In</h3>
-						<form class="form" name="login" method="post" action="#">
+						<form class="form" name="login" method="post" action="/login-check">
 							<div class="row">
 								<div class="form-group col-md-12">
 									<label for="">Email Address</label>
