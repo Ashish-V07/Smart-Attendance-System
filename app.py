@@ -39,6 +39,7 @@ def login_check():
     if user and check_password_hash(user[4], entered_password):
         session['user_id'] = user[0]
         session['email'] = email
+        session['role_id'] = user[1]
 
         if user[1] == 1:
             return redirect('/admin_dashboard')
@@ -66,7 +67,7 @@ def logout():
 
 @app.route('/admin_dashboard')
 def admin_dashboard():
-    if session.get('user_id'):
+    if session.get('user_id') and session.get('role_id')==1:
         return render_template('admin_dashboard.html')
     else:
         flash('You are not authorized to access this page','danger')
@@ -75,7 +76,7 @@ def admin_dashboard():
 
 @app.route('/admin/profile')
 def admin_profile():
-    if session.get('user_id'):
+    if session.get('user_id') and session.get('role_id')==1:
         return render_template('Admin-profile.html')
     else:
         flash('You are not authorized to access this page','danger')
@@ -83,7 +84,7 @@ def admin_profile():
 
 @app.route('/admin/register-face')
 def face_registration():
-    if session.get('user_id'):
+    if session.get('user_id') and session.get('role_id')==1:
         return render_template('face_registration.html')
     else:
         flash('You are not authorized to access this page','danger')
