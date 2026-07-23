@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<!-- Meta -->
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<!-- SITE TITLE -->
+	<title>Verify OTP - Smart Attendance System</title>
+	<!-- Latest Bootstrap min CSS -->
+	<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+	<!-- Google Font -->
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+	<!-- Font Awesome CSS -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='fonts/font-awesome.min.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='fonts/themify-icons.css') }}">
+	<!-- Style CSS -->
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body data-spy="scroll" data-offset="80">
+
+	{% include "components/Error_Show.html" %}
+
+	{% include "components/navbar.html" %}
+
+	<!-- START SECTION TOP -->
+	<section class="section-top">
+		<div class="container">
+			<div class="col-lg-10 offset-lg-1 text-center">
+				<div class="section-top-title wow fadeInRight" data-wow-duration="1s" data-wow-delay="0.3s"
+					data-wow-offset="0">
+					<h1>Verify OTP</h1>
+					<ul>
+						<li><a href="/">Home</a></li>
+						<li> / Verify OTP</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</section>
+	<!-- END SECTION TOP -->
+
+	<!-- VERIFY OTP -->
+	<div id="verify-otp-section" class="contact_area section-padding">
+		<div class="container">
+			<div class="row justify-content-center">
+				<div class="col-lg-6 col-sm-12 col-xs-12 wow fadeInUp" data-wow-duration="1s" data-wow-delay="0.2s"
+					data-wow-offset="0">
+					<div class="contact"
+						style="background: #f9f9f9; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+						<h3 class="text-center mb-4" style="margin-bottom: 30px; font-weight: 600;">Enter Verification Code</h3>
+						<p class="text-center" style="margin-bottom: 20px; color: #666;">We have sent a 6-digit One Time Password to your email. Please enter it below.</p>
+						<form class="form" name="verify_otp" method="post" action="/verify_otp_check">
+							<div class="row">
+								<div class="form-group col-md-12">
+									<label for="">6-Digit OTP</label>
+									<input type="text" name="otp" class="form-control" required="required"
+										placeholder="e.g. 123456" pattern="\d{6}" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 10px;">
+								</div>
+								<div class="col-md-12 text-center" style="margin-top: 15px;">
+									<button type="submit" value="Verify OTP" name="submit" class="btn_one"
+										style="width: 100%;" title="Verify OTP">Verify OTP</button>
+								</div>
+								<div class="col-md-12 text-center mt-3" style="margin-top: 15px;">
+									<a href="forgot-password" style="color: #666; font-size: 14px;">Didn't receive it? Resend</a>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- END VERIFY OTP -->
+
+	{% include "components/footer.html" %}
+
+	<!-- Latest jQuery -->
+	<script src="{{ url_for('static', filename='js/jquery-1.12.4.min.js') }}"></script>
+	<!-- Latest compiled and minified Bootstrap -->
+	<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
+	<!-- scripts js -->
+	<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+
+</body>
+
+</html>
