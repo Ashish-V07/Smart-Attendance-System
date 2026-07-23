@@ -3,6 +3,7 @@ from database import get_connection
 from flask_mail import Mail, Message
 import random
 from werkzeug.security import generate_password_hash, check_password_hash
+import time
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = '@Yash_(05-smart-attendance-system-15)_Ashish@'
@@ -80,6 +81,7 @@ def forgot_password_check():
     if user:
         session['otp']=str(otp)
         session['email']=email
+        session['otp_time'] = time.time()
         send_otp(email,otp)
         return redirect('verify_otp')
     else:
@@ -94,7 +96,15 @@ def verify_otp():
 @app.route('/verify_otp_check',methods=['post'])
 def verify_otp_check():
     otp=request.form['otp']
-    if otp==session['otp']:
+    
+    otp_time = session.get('otp_time')
+    if not otp_time or (time.time() - otp_time > 600):
+        session.pop('otp', None)
+        session.pop('otp_time', None)
+        flash("OTP has expired. Please request a new one.", "danger")
+        return redirect("/forgot-password")
+        
+    if otp==session.get('otp'):
         flash("OTP Verified Successfully", "success")
         return redirect('reset_password')
     else:
