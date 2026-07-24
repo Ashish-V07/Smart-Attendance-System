@@ -366,50 +366,7 @@ def face_registration():
         flash('You are not authorized to access this page','danger')
         return redirect(url_for('login'))
 
-# --- OpenCV Camera Integration ---
-camera = None
 
-def get_camera():
-    global camera
-    if camera is None:
-        camera = cv2.VideoCapture(0)
-    return camera
-
-def gen_frames():
-    cam = get_camera()
-    while True:
-        success, frame = cam.read()
-        if not success:
-            break
-        else:
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame_bytes = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-
-@app.route('/video_feed')
-def video_feed():
-    if session.get('user_id') and session.get('role_id')==1:
-        return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-    return "Unauthorized", 403
-
-@app.route('/capture_frame')
-def capture_frame():
-    if session.get('user_id') and session.get('role_id')==1:
-        global camera
-        cam = get_camera()
-        success, frame = cam.read()
-        if success:
-            ret, buffer = cv2.imencode('.jpg', frame)
-            jpg_as_text = base64.b64encode(buffer).decode('utf-8')
-            
-            # Release the camera so the light turns off
-            cam.release()
-            camera = None
-            
-            return jsonify({"status": "success", "image": "data:image/jpeg;base64," + jpg_as_text})
-        return jsonify({"status": "error", "message": "Failed to capture frame"})
-    return jsonify({"status": "error", "message": "Unauthorized"}), 403
 
 
 @app.route('/admin/feedback')

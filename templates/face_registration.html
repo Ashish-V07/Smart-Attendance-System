@@ -441,7 +441,9 @@
 
 						<div class="camera-wrapper">
 							<!-- Video feed from webcam -->
-							<img id="videoElement" src="" style="width: 100%; display: none;">
+							<video id="videoElement" autoplay playsinline></video>
+							<!-- Canvas to hold the captured snapshot temporarily -->
+							<canvas id="canvasElement"></canvas>
 							<!-- Visual guide for face positioning -->
 							<div class="camera-overlay"></div>
 						</div>
@@ -542,46 +544,68 @@
 			});
 		});
 
-		// --- OpenCV Camera and Capture Logic ---
+		// --- JavaScript Camera and Capture Logic ---
 		const videoElement = document.getElementById('videoElement');
+		const canvasElement = document.getElementById('canvasElement');
 		const startCameraBtn = document.getElementById('startCameraBtn');
 		const captureBtn = document.getElementById('captureBtn');
 		const submitBtn = document.getElementById('submitBtn');
 		const faceDataInput = document.getElementById('faceData');
 		const captureStatus = document.getElementById('captureStatus');
+        let stream = null;
 
 		// Start Camera function
-		startCameraBtn.addEventListener('click', () => {
-			videoElement.style.display = 'block';
-			videoElement.src = "{{ url_for('video_feed') }}?t=" + new Date().getTime();
-			captureBtn.disabled = false;
-			startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Camera Active';
-			startCameraBtn.classList.add('disabled');
-			captureStatus.style.display = 'none';
-			submitBtn.disabled = true;
+		startCameraBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480, facingMode: "user" } 
+                });
+                videoElement.srcObject = stream;
+                videoElement.style.display = 'block';
+                canvasElement.style.display = 'none';
+                captureBtn.disabled = false;
+                startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Camera Active';
+                startCameraBtn.classList.add('disabled');
+                
+                // Hide previous capture status
+                captureStatus.style.display = 'none';
+                submitBtn.disabled = true; // Disable submit until new photo is captured
+            } catch (err) {
+                console.error("Error accessing webcam: ", err);
+                alert("Could not access the webcam. Please ensure you have granted permission.");
+            }
 		});
 
 		// Capture Photo function
-		captureBtn.addEventListener('click', async () => {
-			try {
-				const response = await fetch("{{ url_for('capture_frame') }}");
-				const data = await response.json();
-				if (data.status === 'success') {
-					faceDataInput.value = data.image;
-                    // Freeze the camera feed to the captured image
-                    videoElement.src = data.image;
-					captureStatus.style.display = 'block';
-					submitBtn.disabled = false;
-                    // Reset start button so they can retake
-                    startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Retake Photo';
-                    startCameraBtn.classList.remove('disabled');
-				} else {
-					alert("Failed to capture image: " + data.message);
-				}
-			} catch (err) {
-				console.error("Error capturing photo: ", err);
-				alert("An error occurred while capturing the photo.");
-			}
+		captureBtn.addEventListener('click', () => {
+            if (!stream) return;
+            
+            // Set canvas dimensions to match video
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            
+            // Draw the current video frame onto the canvas
+            const context = canvasElement.getContext('2d');
+            context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+            
+            // Convert canvas image to Base64 data URL
+            const imageDataURL = canvasElement.toDataURL('image/jpeg', 0.9);
+            
+            // Store it in the hidden input for the form submission
+            faceDataInput.value = imageDataURL;
+            
+            // Stop all camera tracks so the light turns off!
+            stream.getTracks().forEach(track => track.stop());
+            videoElement.style.display = 'none';
+            canvasElement.style.display = 'block';
+            
+            // Show success indicator and enable form submission
+            captureStatus.style.display = 'block';
+            submitBtn.disabled = false;
+            
+            // Reset start button so they can retake
+            startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Retake Photo';
+            startCameraBtn.classList.remove('disabled');
 		});
 
 		// Optional: Form submit handler if you prefer AJAX over standard POST
