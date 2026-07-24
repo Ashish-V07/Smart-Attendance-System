@@ -390,7 +390,7 @@
 					<div class="summary-card">
 						<div class="summary-info">
 							<h5>Total Students</h5>
-							<h3>1,254</h3>
+							<h3>{{ total_students }}</h3>
 						</div>
 						<div class="summary-icon icon-blue">
 							<i class="ti-user"></i>
@@ -401,7 +401,7 @@
 					<div class="summary-card">
 						<div class="summary-info">
 							<h5>Total Faculty</h5>
-							<h3>86</h3>
+							<h3>{{ total_faculty }}</h3>
 						</div>
 						<div class="summary-icon icon-orange">
 							<i class="ti-id-badge"></i>
@@ -411,22 +411,22 @@
 				<div class="col-xl-3 col-lg-6 col-md-6">
 					<div class="summary-card">
 						<div class="summary-info">
-							<h5>Today's Attendance</h5>
-							<h3>92.5%</h3>
+							<h5>Total Courses</h5>
+							<h3>{{ total_courses }}</h3>
 						</div>
 						<div class="summary-icon icon-green">
-							<i class="ti-check-box"></i>
+							<i class="ti-book"></i>
 						</div>
 					</div>
 				</div>
 				<div class="col-xl-3 col-lg-6 col-md-6">
 					<div class="summary-card">
 						<div class="summary-info">
-							<h5>Pending Alerts</h5>
-							<h3>5</h3>
+							<h5>Total Feedbacks</h5>
+							<h3>{{ total_feedbacks }}</h3>
 						</div>
 						<div class="summary-icon icon-red">
-							<i class="ti-bell"></i>
+							<i class="ti-comment-alt"></i>
 						</div>
 					</div>
 				</div>
@@ -444,7 +444,6 @@
 							<table class="table table-hover">
 								<thead>
 									<tr>
-										<th>ID</th>
 										<th>Name</th>
 										<th>Role</th>
 										<th>Time</th>
@@ -453,66 +452,42 @@
 									</tr>
 								</thead>
 								<tbody>
+									{% if recent_attendance %}
+									{% for record in recent_attendance %}
 									<tr>
-										<td>#ST-1045</td>
 										<td>
 											<div class="d-flex align-items-center">
-												<img src="https://ui-avatars.com/api/?name=Alex+Johnson&background=random"
+												{% if record.profile_img %}
+												<img src="{{ record.profile_img }}" alt="img"
+													style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px;">
+												{% else %}
+												<img src="{{ url_for('static', filename='/assets/img/Users/Student/Default.jpg') }}"
 													alt="img"
 													style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px;">
-												Alex Johnson
+												{% endif %}
+												{{ record.full_name }}
 											</div>
 										</td>
-										<td>Student (B.Tech)</td>
-										<td>08:45 AM</td>
+										<td>{{ record.role_name }}</td>
+										<td>{{ record.attendance_time.strftime('%I:%M %p, %b %d') if
+											record.attendance_time else '--' }}</td>
 										<td>Face AI</td>
-										<td><span class="status-badge status-present">Present</span></td>
-									</tr>
-									<tr>
-										<td>#FC-021</td>
 										<td>
-											<div class="d-flex align-items-center">
-												<img src="https://ui-avatars.com/api/?name=Sarah+Smith&background=random"
-													alt="img"
-													style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px;">
-												Prof. Sarah Smith
-											</div>
+											{% if record.status|lower == 'present' %}
+											<span class="status-badge status-present">Present</span>
+											{% elif record.status|lower == 'late' %}
+											<span class="status-badge status-late">Late</span>
+											{% else %}
+											<span class="status-badge status-absent">{{ record.status }}</span>
+											{% endif %}
 										</td>
-										<td>Faculty (CS)</td>
-										<td>08:52 AM</td>
-										<td>Face AI</td>
-										<td><span class="status-badge status-present">Present</span></td>
 									</tr>
+									{% endfor %}
+									{% else %}
 									<tr>
-										<td>#ST-1092</td>
-										<td>
-											<div class="d-flex align-items-center">
-												<img src="https://ui-avatars.com/api/?name=Michael+Brown&background=random"
-													alt="img"
-													style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px;">
-												Michael Brown
-											</div>
-										</td>
-										<td>Student (B.Tech)</td>
-										<td>09:15 AM</td>
-										<td>Manual</td>
-										<td><span class="status-badge status-late">Late</span></td>
+										<td colspan="5" class="text-center py-4">No recent check-ins found.</td>
 									</tr>
-									<tr>
-										<td>#ST-1105</td>
-										<td>
-											<div class="d-flex align-items-center">
-												<img src="https://ui-avatars.com/api/?name=Emily+Davis&background=random"
-													alt="img"
-													style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px;">
-												Emily Davis
-											</div>
-										</td>
-										<td>Student (B.Tech)</td>
-										<td>--:--</td>
-										<td>--</td>
-										<td><span class="status-badge status-absent">Absent</span></td>
-									</tr>
+									{% endif %}
 								</tbody>
 							</table>
 						</div>
@@ -536,6 +511,6 @@
 		});
 	</script>
 
-	</body>
+</body>
 
 </html>

@@ -183,7 +183,41 @@ def logout():
 @app.route('/admin_dashboard')
 def admin_dashboard():
     if session.get('user_id') and session.get('role_id')==1:
-        return render_template('admin_dashboard.html')
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("SELECT COUNT(*) as count FROM students")
+        total_students = cursor.fetchone()['count']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM faculty")
+        total_faculty = cursor.fetchone()['count']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM courses")
+        total_courses = cursor.fetchone()['count']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM feedback")
+        total_feedbacks = cursor.fetchone()['count']
+        
+        cursor.execute('''
+            SELECT u.full_name, r.role_name, a.attendance_time, a.status, u.profile_img 
+            FROM attendance a
+            JOIN students s ON a.student_id = s.student_id
+            JOIN users u ON s.user_id = u.user_id
+            JOIN roles r ON u.role_id = r.role_id
+            ORDER BY a.attendance_time DESC
+            LIMIT 5
+        ''')
+        recent_attendance = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('admin_dashboard.html', 
+                               total_students=total_students, 
+                               total_faculty=total_faculty,
+                               total_courses=total_courses,
+                               total_feedbacks=total_feedbacks,
+                               recent_attendance=recent_attendance)
     else:
         return redirect(url_for('login'))
 
