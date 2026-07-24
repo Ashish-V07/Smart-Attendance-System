@@ -1,4 +1,5 @@
 import os
+import base64
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, session,redirect, url_for, flash
 from database import get_connection
@@ -301,10 +302,58 @@ def admin_profile():
         flash('You are not authorized to access this page','danger')
         return redirect(url_for('login'))
 
-@app.route('/admin/register-face')
+@app.route('/admin/register-face', methods=['GET', 'POST'])
 def face_registration():
     if session.get('user_id') and session.get('role_id')==1:
-        return render_template('face_registration.html')
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        if request.method == 'POST':
+            student_id = request.form.get('student_id')
+            face_data = request.form.get('face_data')
+            
+            if student_id and face_data:
+                try:
+                    header, encoded = face_data.split(",", 1)
+                    data = base64.b64decode(encoded)
+                    
+                    filename = f"student_{student_id}.jpg"
+                    filepath = os.path.join(app.root_path, 'static', 'faces', filename)
+                    
+                    with open(filepath, "wb") as f:
+                        f.write(data)
+                        
+                    db_path = f"/static/faces/{filename}"
+                    
+                    cursor.execute('''
+                        INSERT INTO face_data (student_id, image_path) 
+                        VALUES (%s, %s) 
+                        ON DUPLICATE KEY UPDATE image_path = %s
+                    ''', (student_id, db_path, db_path))
+                    
+                    conn.commit()
+                    flash("Face registered successfully!", "success")
+                except Exception as e:
+                    flash(f"Error saving face data: {e}", "danger")
+            else:
+                flash("Missing student selection or face data.", "danger")
+                
+            cursor.close()
+            conn.close()
+            return redirect(url_for('face_registration'))
+            
+        cursor.execute('''
+            SELECT s.student_id, u.full_name, u.user_id 
+            FROM students s 
+            JOIN users u ON s.user_id = u.user_id 
+            WHERE u.status = 1
+            ORDER BY u.full_name ASC
+        ''')
+        students = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return render_template('face_registration.html', students=students)
     else:
         flash('You are not authorized to access this page','danger')
         return redirect(url_for('login'))
@@ -441,6 +490,143 @@ def activate_faculty(user_id):
 
 
 
+@app.route('/admin/students')
+def admin_students():
+    if session.get('user_id') and session.get('role_id')==1:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Fetch all students with their course and semester info
+        cursor.execute('''
+            SELECT u.user_id, u.full_name, u.email, u.profile_img, u.status, 
+                   s.student_id, fd.student_id as fd_student_id,c.course_name, c.course_id, sem.semester_name, sem.semester_id 
+            FROM users u 
+            JOIN students s ON u.user_id = s.user_id 
+            LEFT JOIN face_data fd ON s.student_id = fd.student_id
+            JOIN courses c ON s.course_id = c.course_id
+            JOIN semesters sem ON s.semester_id = sem.semester_id
+            WHERE u.role_id = 3
+        ''')
+        students = cursor.fetchall()
+        
+        # Fetch courses and semesters for dropdowns
+        cursor.execute('SELECT * FROM courses')
+        courses = cursor.fetchall()
+        
+        cursor.execute('SELECT * FROM semesters')
+        semesters = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        return render_template('admin_student.html', students=students, courses=courses, semesters=semesters)
+    else:
+        flash('You are not authorized to access this page','danger')
+        return redirect(url_for('login'))
+
+@app.route('/admin/students/add', methods=['POST'])
+def add_student():
+    if session.get('user_id') and session.get('role_id')==1:
+        full_name = request.form['full_name']
+        email = request.form['email']
+        course_id = request.form['course_id']
+        semester_id = request.form['semester_id']
+        profile_img = '/assets/img/Users/Student/Default.jpg'
+        status = 1
+        created_at = datetime.datetime.now()
+        hashed_password = None
+        
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Insert into users table with role_id 3
+            cursor.execute('INSERT INTO users (role_id, full_name, email, password, profile_img, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s)', 
+                           (3, full_name, email, hashed_password, profile_img, status, created_at))
+            user_id = cursor.lastrowid
+            
+            # Insert into students table
+            cursor.execute('INSERT INTO students (user_id, course_id, semester_id) VALUES (%s, %s, %s)', 
+                           (user_id, course_id, semester_id))
+            
+            conn.commit()
+            
+            send_student_welcome(email, full_name)
+            flash('Student added successfully! Welcome email sent.', 'success')
+        except Exception as e:
+            flash(f'Error adding student: {e}', 'danger')
+        finally:
+            cursor.close()
+            conn.close()
+            
+        return redirect(url_for('admin_students'))
+    else:
+        return redirect(url_for('login'))
+
+@app.route('/admin/students/edit/<int:user_id>', methods=['POST'])
+def edit_student(user_id):
+    if session.get('user_id') and session.get('role_id')==1:
+        full_name = request.form['full_name']
+        email = request.form['email']
+        course_id = request.form['course_id']
+        semester_id = request.form['semester_id']
+        
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE users SET full_name=%s, email=%s WHERE user_id=%s', (full_name, email, user_id))
+            cursor.execute('UPDATE students SET course_id=%s, semester_id=%s WHERE user_id=%s', 
+                           (course_id, semester_id, user_id))
+            conn.commit()
+            flash('Student details updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating student: {e}', 'danger')
+        finally:
+            cursor.close()
+            conn.close()
+            
+        return redirect(url_for('admin_students'))
+    else:
+        return redirect(url_for('login'))
+
+@app.route('/admin/students/delete/<int:user_id>', methods=['POST'])
+def delete_student(user_id):
+    if session.get('user_id') and session.get('role_id')==1:
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE users SET status=0 WHERE user_id=%s', (user_id,))
+            conn.commit()
+            flash('Student deactivated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error deactivating student: {e}', 'danger')
+        finally:
+            cursor.close()
+            conn.close()
+            
+        return redirect(url_for('admin_students'))
+    else:
+        return redirect(url_for('login'))
+
+@app.route('/admin/students/activate/<int:user_id>', methods=['POST'])
+def activate_student(user_id):
+    if session.get('user_id') and session.get('role_id')==1:
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE users SET status=1 WHERE user_id=%s', (user_id,))
+            conn.commit()
+            flash('Student activated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error activating student: {e}', 'danger')
+        finally:
+            cursor.close()
+            conn.close()
+            
+        return redirect(url_for('admin_students'))
+    else:
+        return redirect(url_for('login'))
+
+
 #default functions
 
 def send_otp(email,otp):
@@ -492,6 +678,35 @@ def send_faculty_welcome(email, name):
             <h3 style="color: #333333; margin-top: 0; font-size: 20px;">Registration Successful</h3>
             <p style="color: #555555; line-height: 1.6; font-size: 15px;">Hello {name},</p>
             <p style="color: #555555; line-height: 1.6; font-size: 15px;">You have been successfully registered as a Faculty member in the Smart Attendance System.</p>
+            <p style="color: #555555; line-height: 1.6; font-size: 15px;">To set up your password, please go to the website and use the <strong>Forgot Password</strong> feature with this email address.</p>
+            <br>
+            <p style="color: #555555; line-height: 1.6; margin-bottom: 0; font-size: 15px;">Best regards,<br><strong>The Smart Attendance Team</strong></p>
+        </div>
+        <div style="background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;">
+            <p style="color: #999999; font-size: 12px; margin: 0;">&copy; 2026 Smart Attendance System. All rights reserved.</p>
+        </div>
+    </div>
+    """
+    
+    msg.html = html_body
+    mail.send(msg)
+
+def send_student_welcome(email, name):
+    msg = Message(
+        "Welcome to Smart Attendance System",
+        sender=("AttendEase | Admin",app.config['MAIL_USERNAME']),
+        recipients=[email]
+    )
+
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #35ac39; padding: 20px; text-align: center;">
+            <h2 style="color: #ffffff; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Smart Attendance System</h2>
+        </div>
+        <div style="padding: 40px 30px; background-color: #ffffff;">
+            <h3 style="color: #333333; margin-top: 0; font-size: 20px;">Registration Successful</h3>
+            <p style="color: #555555; line-height: 1.6; font-size: 15px;">Hello {name},</p>
+            <p style="color: #555555; line-height: 1.6; font-size: 15px;">You have been successfully registered as a Student in the Smart Attendance System.</p>
             <p style="color: #555555; line-height: 1.6; font-size: 15px;">To set up your password, please go to the website and use the <strong>Forgot Password</strong> feature with this email address.</p>
             <br>
             <p style="color: #555555; line-height: 1.6; margin-bottom: 0; font-size: 15px;">Best regards,<br><strong>The Smart Attendance Team</strong></p>

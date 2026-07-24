@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 	<title>Face Registration - Smart Attendance System</title>
-	
+
 	<!-- Latest Bootstrap min CSS -->
 	<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
 	<!-- Google Font -->
-	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+	<link
+		href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+		rel="stylesheet">
 	<!-- Font Awesome & Themify Icons -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 	<link rel="stylesheet" href="{{ url_for('static', filename='fonts/themify-icons.css') }}">
@@ -23,7 +26,7 @@
 			--text-muted: #888;
 			--sidebar-width: 260px;
 		}
-		
+
 		body {
 			font-family: 'DM Sans', sans-serif;
 			background-color: var(--bg-light);
@@ -45,21 +48,21 @@
 			transition: all 0.3s ease;
 			box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 		}
-		
+
 		.sidebar .logo-wrapper {
 			text-align: center;
 			padding-bottom: 20px;
 			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 			margin-bottom: 20px;
 		}
-		
+
 		.sidebar .logo-wrapper h4 {
 			color: #fff;
 			margin-top: 10px;
 			font-weight: 700;
 			letter-spacing: 1px;
 		}
-		
+
 		.sidebar .logo-wrapper h4 span {
 			color: var(--primary-color);
 		}
@@ -124,7 +127,7 @@
 			position: relative;
 			width: 300px;
 		}
-		
+
 		.header-search input {
 			width: 100%;
 			padding: 10px 15px 10px 40px;
@@ -133,7 +136,7 @@
 			outline: none;
 			background-color: #f9f9f9;
 		}
-		
+
 		.header-search i {
 			position: absolute;
 			left: 15px;
@@ -221,7 +224,8 @@
 			margin-bottom: 8px;
 		}
 
-		.form-control, .form-select {
+		.form-control,
+		.form-select {
 			border-radius: 6px;
 			padding: 10px 15px;
 			border: 1px solid #e0e0e0;
@@ -229,7 +233,8 @@
 			width: 100%;
 		}
 
-		.form-control:focus, .form-select:focus {
+		.form-control:focus,
+		.form-select:focus {
 			border-color: var(--primary-color);
 			box-shadow: none;
 			background-color: #fff;
@@ -248,7 +253,7 @@
 			width: 100%;
 			cursor: pointer;
 		}
-		
+
 		.btn-custom:hover {
 			background-color: #2b8b2d;
 			color: #fff;
@@ -306,9 +311,10 @@
 			height: 70%;
 			border: 2px dashed rgba(255, 255, 255, 0.6);
 			border-radius: 50%;
-			pointer-events: none; /* Let clicks pass through */
+			pointer-events: none;
+			/* Let clicks pass through */
 		}
-		
+
 		.instruction-text {
 			color: var(--text-muted);
 			font-size: 14px;
@@ -328,19 +334,24 @@
 			.sidebar {
 				transform: translateX(-100%);
 			}
+
 			.main-content {
 				margin-left: 0;
 			}
+
 			.mobile-toggle {
 				display: block;
 			}
+
 			.header-search {
 				display: none;
 			}
+
 			/* When sidebar is active on mobile */
 			.sidebar.active {
 				transform: translateX(0);
 			}
+
 			.reg-card {
 				margin-bottom: 20px;
 			}
@@ -371,41 +382,21 @@
 				<div class="col-lg-5 mb-4">
 					<div class="reg-card">
 						<h4 class="card-title">User Information</h4>
-						
+						{% include "components/Error_Show.html" %}
 						<!-- Form is ready for Flask POST request -->
 						<!-- Adding an ID so JavaScript can intercept or submit via AJAX/Fetch API -->
-						<form id="registrationForm" method="POST" action="/register_face">
+						<form id="registrationForm" method="POST" action="{{ url_for('face_registration') }}">
 							<div class="row">
-								<div class="col-md-12 mb-3">
-									<div class="form-group">
-										<label>Role</label>
-										<select name="role" id="userRole" class="form-select" required>
-											<option value="" disabled selected>Select Role</option>
-											<option value="student">Student</option>
-											<option value="faculty">Faculty</option>
-											<option value="staff">Staff</option>
-										</select>
-									</div>
-								</div>
-								
-								<div class="col-md-12 mb-3">
-									<div class="form-group">
-										<label>User ID (Enrollment/Employee No.)</label>
-										<input type="text" name="user_id" id="userId" class="form-control" placeholder="e.g., STU-2026-001" required>
-									</div>
-								</div>
-
-								<div class="col-md-12 mb-3">
-									<div class="form-group">
-										<label>Full Name</label>
-										<input type="text" name="full_name" id="fullName" class="form-control" placeholder="Enter full name" required>
-									</div>
-								</div>
-								
 								<div class="col-md-12 mb-4">
 									<div class="form-group">
-										<label>Department / Course</label>
-										<input type="text" name="department" id="department" class="form-control" placeholder="e.g., B.Tech Computer Science">
+										<label>Select Student</label>
+										<select name="student_id" id="studentSelect" class="form-select" required>
+											<option value="" disabled selected>-- Select an Active Student --</option>
+											{% for student in students %}
+											<option value="{{ student.student_id }}">[{{ student.user_id }}] {{
+												student.full_name }}</option>
+											{% endfor %}
+										</select>
 									</div>
 								</div>
 
@@ -413,7 +404,8 @@
 								<input type="hidden" name="face_data" id="faceData">
 
 								<div class="col-md-12">
-									<button type="submit" id="submitBtn" class="btn-custom" disabled>Complete Registration</button>
+									<button type="submit" id="submitBtn" class="btn-custom" disabled>Complete
+										Registration</button>
 								</div>
 							</div>
 						</form>
@@ -424,7 +416,7 @@
 				<div class="col-lg-7 mb-4">
 					<div class="reg-card">
 						<h4 class="card-title text-center">Face Capture</h4>
-						
+
 						<div class="camera-wrapper">
 							<!-- Video feed from webcam -->
 							<video id="videoElement" autoplay playsinline></video>
@@ -433,9 +425,10 @@
 							<!-- Visual guide for face positioning -->
 							<div class="camera-overlay"></div>
 						</div>
-						
+
 						<p class="instruction-text">
-							<i class="ti-info-alt text-primary"></i> Please ensure the user's face is clearly visible inside the oval guide, with adequate lighting.
+							<i class="ti-info-alt text-primary"></i> Please ensure the user's face is clearly visible
+							inside the oval guide, with adequate lighting.
 						</p>
 
 						<div class="row mt-4">
@@ -450,7 +443,7 @@
 								</button>
 							</div>
 						</div>
-						
+
 						<!-- Status indicator -->
 						<div class="text-center mt-3" id="captureStatus" style="display: none;">
 							<span class="badge bg-success" style="font-size: 14px; padding: 8px 12px;">
@@ -467,12 +460,12 @@
 	<script src="{{ url_for('static', filename='js/jquery-1.12.4.min.js') }}"></script>
 	<!-- Latest compiled and minified Bootstrap -->
 	<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
-	
+
 	<!-- Dashboard Interactivity and Camera Logic -->
 	<script>
 		// --- Sidebar Toggle ---
-		$(document).ready(function(){
-			$('#mobile-toggle').click(function(){
+		$(document).ready(function () {
+			$('#mobile-toggle').click(function () {
 				$('#sidebar').toggleClass('active');
 			});
 		});
@@ -490,14 +483,14 @@
 		// Start Camera function
 		startCameraBtn.addEventListener('click', async () => {
 			try {
-				stream = await navigator.mediaDevices.getUserMedia({ 
-					video: { width: 640, height: 480, facingMode: "user" } 
+				stream = await navigator.mediaDevices.getUserMedia({
+					video: { width: 640, height: 480, facingMode: "user" }
 				});
 				video.srcObject = stream;
 				captureBtn.disabled = false;
 				startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Camera Active';
 				startCameraBtn.classList.add('disabled');
-				
+
 				// Hide previous capture status
 				captureStatus.style.display = 'none';
 				submitBtn.disabled = true; // Disable submit until new photo is captured
@@ -510,35 +503,35 @@
 		// Capture Photo function
 		captureBtn.addEventListener('click', () => {
 			if (!stream) return;
-			
+
 			// Set canvas dimensions to match video
 			canvas.width = video.videoWidth;
 			canvas.height = video.videoHeight;
-			
+
 			// Draw the current video frame onto the canvas
 			const context = canvas.getContext('2d');
 			context.drawImage(video, 0, 0, canvas.width, canvas.height);
-			
+
 			// Convert canvas image to Base64 data URL (JPEG format is usually best for face rec)
 			const imageDataURL = canvas.toDataURL('image/jpeg', 0.9);
-			
+
 			// Store it in the hidden input for the form submission
 			faceDataInput.value = imageDataURL;
-			
+
 			// Show success indicator and enable form submission
 			captureStatus.style.display = 'block';
 			submitBtn.disabled = false;
-			
+
 			// Optional: Pause video to freeze on the captured frame
 			// video.pause(); 
 		});
 
 		// Optional: Form submit handler if you prefer AJAX over standard POST
 		const registrationForm = document.getElementById('registrationForm');
-		registrationForm.addEventListener('submit', function(e) {
+		registrationForm.addEventListener('submit', function (e) {
 			// Since we have a backend in mind, we can let standard POST happen 
 			// because the Base64 data is in the hidden input.
-			
+
 			// If you prefer Fetch API (AJAX) for Flask to avoid page reload, uncomment below:
 			/*
 			e.preventDefault();
@@ -567,5 +560,6 @@
 		});
 	</script>
 
-	</body>
+</body>
+
 </html>
