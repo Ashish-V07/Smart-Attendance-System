@@ -31,6 +31,38 @@ def about():
 def contact():
     return render_template('contact.html')
 
+@app.route('/contact-check', methods=['POST'])
+def contact_check():
+    name = request.form['name']
+    email = request.form['email']
+    subject=request.form['subject']
+    message = request.form['message']
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("INSERT INTO feedback (name, email, subject,message) VALUES (%s, %s, %s, %s)", (name, email, subject,message))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+    flash("Message sent successfully!", "success")
+
+    return redirect(url_for('contact'))
+
+@app.route('/admin_feedback')
+def feedback_show():
+    if session.get('user_id') and session.get('role_id')==1:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM feedback")
+        feedback = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return render_template('admin_feedback.html', feedback=feedback)
+    else:
+        return redirect(url_for('login'))
+
 @app.route('/login')
 def login():
     return render_template('login.html')
@@ -239,6 +271,20 @@ def admin_profile():
 def face_registration():
     if session.get('user_id') and session.get('role_id')==1:
         return render_template('face_registration.html')
+    else:
+        flash('You are not authorized to access this page','danger')
+        return redirect(url_for('login'))
+
+@app.route('/admin/feedback')
+def admin_feedback():
+    if session.get('user_id') and session.get('role_id')==1:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM feedback ORDER BY feedback_id DESC')
+        feedbacks = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return render_template('admin_feedback.html', feedbacks=feedbacks)
     else:
         flash('You are not authorized to access this page','danger')
         return redirect(url_for('login'))

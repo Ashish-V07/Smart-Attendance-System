@@ -116,11 +116,10 @@
 
 							<h3 class="mb-4 text-center">Contact Us</h3>
 
-							<form class="form" name="enq" method="post" action="contact.php"
-								onsubmit="return validation();">
+							<form class="form" name="enq" method="post" action="/contact-check">
 
 								<div class="row g-3">
-
+									{% include "components/Error_Show.html" %}
 									<div class="col-md-6">
 										<label class="form-label fw-semibold">Name</label>
 										<input type="text" name="name" class="form-control bg-light"
