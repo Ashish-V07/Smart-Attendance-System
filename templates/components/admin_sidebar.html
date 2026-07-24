@@ -6,7 +6,7 @@
 	<ul class="sidebar-menu" id="adminSidebarMenu">
 		<li><a href="{{ url_for('admin_dashboard') }}"><i class="ti-dashboard"></i> Dashboard</a></li>
 		<li><a href="#"><i class="ti-user"></i> Student Management</a></li>
-		<li><a href="#"><i class="ti-id-badge"></i> Faculty Management</a></li>
+		<li><a href="{{ url_for('admin_faculty') }}"><i class="ti-id-badge"></i> Faculty Management</a></li>
 		<li><a href="#"><i class="ti-book"></i> Class & Subject</a></li>
 		<li><a href="#"><i class="ti-calendar"></i> Attendance Tracking</a></li>
 		<li><a href="{{ url_for('face_registration') }}"><i class="ti-face-smile"></i> Face Registration</a></li>
