@@ -386,7 +386,7 @@
 						<!-- Form is ready for Flask POST request -->
 						<!-- Adding an ID so JavaScript can intercept or submit via AJAX/Fetch API -->
 						<form id="registrationForm" method="POST" action="{{ url_for('face_registration') }}">
-                            <div class="row">
+							<div class="row">
 								<div class="col-md-12 mb-3">
 									<div class="form-group">
 										<label>Select Course</label>
@@ -414,7 +414,8 @@
 								<div class="col-md-12 mb-4">
 									<div class="form-group">
 										<label>Select Student</label>
-										<select name="student_id" id="studentSelect" class="form-select" required disabled>
+										<select name="student_id" id="studentSelect" class="form-select" required
+											disabled>
 											<option value="" disabled selected>-- Select an Active Student --</option>
 											<!-- Populated dynamically via JS -->
 										</select>
@@ -440,9 +441,7 @@
 
 						<div class="camera-wrapper">
 							<!-- Video feed from webcam -->
-							<video id="videoElement" autoplay playsinline></video>
-							<!-- Canvas to hold the captured snapshot temporarily -->
-							<canvas id="canvasElement"></canvas>
+							<img id="videoElement" src="" style="width: 100%; display: none;">
 							<!-- Visual guide for face positioning -->
 							<div class="camera-overlay"></div>
 						</div>
@@ -482,10 +481,12 @@
 	<!-- Latest compiled and minified Bootstrap -->
 	<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
 
-	<!-- Dashboard Interactivity and Camera Logic -->
+	<!-- Pass Python data to JavaScript safely and without IDE errors -->
+	<script id="students-data" type="application/json">
+		{{ students | tojson }}
+	</script>
 	<script>
-		// Pass Python data to JavaScript safely
-		const studentsData = {{ students | tojson }};
+		const studentsData = JSON.parse(document.getElementById('students-data').textContent);
 
 		$(document).ready(function () {
 			// Sidebar Toggle
@@ -507,11 +508,11 @@
 
 				if (selectedCourse && selectedSemester) {
 					// Filter students based on both selections
-					const filtered = studentsData.filter(student => 
+					const filtered = studentsData.filter(student =>
 						student.course_id == selectedCourse && student.semester_id == selectedSemester
 					);
 
-					if(filtered.length === 0) {
+					if (filtered.length === 0) {
 						$studentSelect.append('<option value="" disabled>No students found</option>');
 					} else {
 						filtered.forEach(student => {
@@ -524,7 +525,7 @@
 				}
 			}
 
-			$courseSelect.change(function() {
+			$courseSelect.change(function () {
 				if ($(this).val()) {
 					$semesterSelect.prop('disabled', false);
 					// Reset semester selection when course changes
@@ -536,65 +537,46 @@
 				}
 			});
 
-			$semesterSelect.change(function() {
+			$semesterSelect.change(function () {
 				filterStudents();
 			});
 		});
 
-		// --- Camera and Capture Logic for Flask Backend ---
-		const video = document.getElementById('videoElement');
-		const canvas = document.getElementById('canvasElement');
+		// --- OpenCV Camera and Capture Logic ---
+		const videoElement = document.getElementById('videoElement');
 		const startCameraBtn = document.getElementById('startCameraBtn');
 		const captureBtn = document.getElementById('captureBtn');
 		const submitBtn = document.getElementById('submitBtn');
 		const faceDataInput = document.getElementById('faceData');
 		const captureStatus = document.getElementById('captureStatus');
-		let stream = null;
 
 		// Start Camera function
-		startCameraBtn.addEventListener('click', async () => {
-			try {
-				stream = await navigator.mediaDevices.getUserMedia({
-					video: { width: 640, height: 480, facingMode: "user" }
-				});
-				video.srcObject = stream;
-				captureBtn.disabled = false;
-				startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Camera Active';
-				startCameraBtn.classList.add('disabled');
-
-				// Hide previous capture status
-				captureStatus.style.display = 'none';
-				submitBtn.disabled = true; // Disable submit until new photo is captured
-			} catch (err) {
-				console.error("Error accessing webcam: ", err);
-				alert("Could not access the webcam. Please ensure you have granted permission.");
-			}
+		startCameraBtn.addEventListener('click', () => {
+			videoElement.style.display = 'block';
+			videoElement.src = "{{ url_for('video_feed') }}";
+			captureBtn.disabled = false;
+			startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Camera Active';
+			startCameraBtn.classList.add('disabled');
+			captureStatus.style.display = 'none';
+			submitBtn.disabled = true;
 		});
 
 		// Capture Photo function
-		captureBtn.addEventListener('click', () => {
-			if (!stream) return;
-
-			// Set canvas dimensions to match video
-			canvas.width = video.videoWidth;
-			canvas.height = video.videoHeight;
-
-			// Draw the current video frame onto the canvas
-			const context = canvas.getContext('2d');
-			context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-			// Convert canvas image to Base64 data URL (JPEG format is usually best for face rec)
-			const imageDataURL = canvas.toDataURL('image/jpeg', 0.9);
-
-			// Store it in the hidden input for the form submission
-			faceDataInput.value = imageDataURL;
-
-			// Show success indicator and enable form submission
-			captureStatus.style.display = 'block';
-			submitBtn.disabled = false;
-
-			// Optional: Pause video to freeze on the captured frame
-			// video.pause(); 
+		captureBtn.addEventListener('click', async () => {
+			try {
+				const response = await fetch("{{ url_for('capture_frame') }}");
+				const data = await response.json();
+				if (data.status === 'success') {
+					faceDataInput.value = data.image;
+					captureStatus.style.display = 'block';
+					submitBtn.disabled = false;
+				} else {
+					alert("Failed to capture image: " + data.message);
+				}
+			} catch (err) {
+				console.error("Error capturing photo: ", err);
+				alert("An error occurred while capturing the photo.");
+			}
 		});
 
 		// Optional: Form submit handler if you prefer AJAX over standard POST
