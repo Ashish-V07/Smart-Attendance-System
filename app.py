@@ -396,11 +396,17 @@ def video_feed():
 @app.route('/capture_frame')
 def capture_frame():
     if session.get('user_id') and session.get('role_id')==1:
+        global camera
         cam = get_camera()
         success, frame = cam.read()
         if success:
             ret, buffer = cv2.imencode('.jpg', frame)
             jpg_as_text = base64.b64encode(buffer).decode('utf-8')
+            
+            # Release the camera so the light turns off
+            cam.release()
+            camera = None
+            
             return jsonify({"status": "success", "image": "data:image/jpeg;base64," + jpg_as_text})
         return jsonify({"status": "error", "message": "Failed to capture frame"})
     return jsonify({"status": "error", "message": "Unauthorized"}), 403

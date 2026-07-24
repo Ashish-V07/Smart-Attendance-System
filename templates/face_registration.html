@@ -553,7 +553,7 @@
 		// Start Camera function
 		startCameraBtn.addEventListener('click', () => {
 			videoElement.style.display = 'block';
-			videoElement.src = "{{ url_for('video_feed') }}";
+			videoElement.src = "{{ url_for('video_feed') }}?t=" + new Date().getTime();
 			captureBtn.disabled = false;
 			startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Camera Active';
 			startCameraBtn.classList.add('disabled');
@@ -568,8 +568,13 @@
 				const data = await response.json();
 				if (data.status === 'success') {
 					faceDataInput.value = data.image;
+                    // Freeze the camera feed to the captured image
+                    videoElement.src = data.image;
 					captureStatus.style.display = 'block';
 					submitBtn.disabled = false;
+                    // Reset start button so they can retake
+                    startCameraBtn.innerHTML = '<i class="ti-video-camera"></i> Retake Photo';
+                    startCameraBtn.classList.remove('disabled');
 				} else {
 					alert("Failed to capture image: " + data.message);
 				}
