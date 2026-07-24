@@ -343,17 +343,24 @@ def face_registration():
             return redirect(url_for('face_registration'))
             
         cursor.execute('''
-            SELECT s.student_id, u.full_name, u.user_id 
+            SELECT s.student_id, u.full_name, u.user_id, s.course_id, s.semester_id 
             FROM students s 
             JOIN users u ON s.user_id = u.user_id 
             WHERE u.status = 1
             ORDER BY u.full_name ASC
         ''')
         students = cursor.fetchall()
+        
+        cursor.execute('SELECT * FROM courses')
+        courses = cursor.fetchall()
+        
+        cursor.execute('SELECT * FROM semesters')
+        semesters = cursor.fetchall()
+        
         cursor.close()
         conn.close()
         
-        return render_template('face_registration.html', students=students)
+        return render_template('face_registration.html', students=students, courses=courses, semesters=semesters)
     else:
         flash('You are not authorized to access this page','danger')
         return redirect(url_for('login'))

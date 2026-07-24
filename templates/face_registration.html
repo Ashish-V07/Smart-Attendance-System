@@ -386,16 +386,37 @@
 						<!-- Form is ready for Flask POST request -->
 						<!-- Adding an ID so JavaScript can intercept or submit via AJAX/Fetch API -->
 						<form id="registrationForm" method="POST" action="{{ url_for('face_registration') }}">
-							<div class="row">
+                            <div class="row">
+								<div class="col-md-12 mb-3">
+									<div class="form-group">
+										<label>Select Course</label>
+										<select id="courseSelect" class="form-select">
+											<option value="" disabled selected>-- Select Course --</option>
+											{% for c in courses %}
+											<option value="{{ c.course_id }}">{{ c.course_name }}</option>
+											{% endfor %}
+										</select>
+									</div>
+								</div>
+
+								<div class="col-md-12 mb-3">
+									<div class="form-group">
+										<label>Select Semester</label>
+										<select id="semesterSelect" class="form-select" disabled>
+											<option value="" disabled selected>-- Select Semester --</option>
+											{% for s in semesters %}
+											<option value="{{ s.semester_id }}">{{ s.semester_name }}</option>
+											{% endfor %}
+										</select>
+									</div>
+								</div>
+
 								<div class="col-md-12 mb-4">
 									<div class="form-group">
 										<label>Select Student</label>
-										<select name="student_id" id="studentSelect" class="form-select" required>
+										<select name="student_id" id="studentSelect" class="form-select" required disabled>
 											<option value="" disabled selected>-- Select an Active Student --</option>
-											{% for student in students %}
-											<option value="{{ student.student_id }}">[{{ student.user_id }}] {{
-												student.full_name }}</option>
-											{% endfor %}
+											<!-- Populated dynamically via JS -->
 										</select>
 									</div>
 								</div>
@@ -463,10 +484,60 @@
 
 	<!-- Dashboard Interactivity and Camera Logic -->
 	<script>
-		// --- Sidebar Toggle ---
+		// Pass Python data to JavaScript safely
+		const studentsData = {{ students | tojson }};
+
 		$(document).ready(function () {
+			// Sidebar Toggle
 			$('#mobile-toggle').click(function () {
 				$('#sidebar').toggleClass('active');
+			});
+
+			// Cascading Dropdown Logic
+			const $courseSelect = $('#courseSelect');
+			const $semesterSelect = $('#semesterSelect');
+			const $studentSelect = $('#studentSelect');
+
+			function filterStudents() {
+				const selectedCourse = $courseSelect.val();
+				const selectedSemester = $semesterSelect.val();
+
+				// Reset student dropdown
+				$studentSelect.empty().append('<option value="" disabled selected>-- Select an Active Student --</option>');
+
+				if (selectedCourse && selectedSemester) {
+					// Filter students based on both selections
+					const filtered = studentsData.filter(student => 
+						student.course_id == selectedCourse && student.semester_id == selectedSemester
+					);
+
+					if(filtered.length === 0) {
+						$studentSelect.append('<option value="" disabled>No students found</option>');
+					} else {
+						filtered.forEach(student => {
+							$studentSelect.append(`<option value="${student.student_id}">[${student.user_id}] ${student.full_name}</option>`);
+						});
+					}
+					$studentSelect.prop('disabled', false);
+				} else {
+					$studentSelect.prop('disabled', true);
+				}
+			}
+
+			$courseSelect.change(function() {
+				if ($(this).val()) {
+					$semesterSelect.prop('disabled', false);
+					// Reset semester selection when course changes
+					$semesterSelect.val('');
+					$studentSelect.val('').prop('disabled', true);
+				} else {
+					$semesterSelect.val('').prop('disabled', true);
+					$studentSelect.val('').prop('disabled', true);
+				}
+			});
+
+			$semesterSelect.change(function() {
+				filterStudents();
 			});
 		});
 
