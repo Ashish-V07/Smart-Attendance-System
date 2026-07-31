@@ -801,7 +801,7 @@ def admin_subjects():
         courses = cursor.fetchall()
         cursor.execute("SELECT * FROM semesters")
         semesters = cursor.fetchall()
-        cursor.execute("SELECT f.faculty_id as user_id, u.full_name as name FROM faculty f JOIN users u ON f.user_id = u.user_id")
+        cursor.execute("SELECT f.faculty_id as user_id, u.full_name as name FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE u.status = 1")
         faculties = cursor.fetchall()
         
         cursor.close()
@@ -868,7 +868,7 @@ def admin_classes():
         cursor = conn.cursor(dictionary=True)
         cursor.execute('''
             SELECT c.class_id, c.class_date, c.start_time, c.end_time,
-                   s.subject_name, u.full_name as faculty_name
+                   s.subject_name, f.faculty_id,u.full_name as faculty_name
             FROM classes c
             LEFT JOIN subjects s ON c.subject_id = s.subject_id
             LEFT JOIN faculty f ON c.faculty_id = f.faculty_id
@@ -879,18 +879,18 @@ def admin_classes():
         
         cursor.execute("SELECT subject_id, subject_name FROM subjects")
         subjects = cursor.fetchall()
-        cursor.execute("SELECT f.faculty_id as user_id, u.full_name as name FROM faculty f JOIN users u ON f.user_id = u.user_id")
-        faculties = cursor.fetchall()
         
         cursor.close()
         conn.close()
         
         for c in classes:
-            if c['start_time']: c['start_time'] = str(c['start_time'])
-            if c['end_time']: c['end_time'] = str(c['end_time'])
+            if c['start_time']: 
+                c['start_time'] = (datetime.datetime.min + c['start_time']).strftime('%I:%M %p')
+            if c['end_time']: 
+                c['end_time'] = (datetime.datetime.min + c['end_time']).strftime('%I:%M %p')
             if c['class_date']: c['class_date'] = str(c['class_date'])
 
-        return render_template('admin_classes.html', classes=classes, subjects=subjects, faculties=faculties)
+        return render_template('admin_classes.html', classes=classes, subjects=subjects)
     return redirect('/admin_dashboard')
 
 @app.route('/admin/classes/add', methods=['POST'])
@@ -899,21 +899,60 @@ def add_class():
         return redirect('/login')
         
     subject_id = request.form.get('subject_id')
-    faculty_id = request.form.get('faculty_id')
     class_date = request.form.get('class_date')
     start_time = request.form.get('start_time')
     end_time = request.form.get('end_time')
     
+    try:
+        class_datetime_str = f"{class_date} {start_time}"
+        class_dt = datetime.datetime.strptime(class_datetime_str, "%Y-%m-%d %H:%M")
+        
+        end_datetime_str = f"{class_date} {end_time}"
+        end_dt = datetime.datetime.strptime(end_datetime_str, "%Y-%m-%d %H:%M")
+        
+        if end_dt <= class_dt:
+            flash("End time must be strictly after start time.", "danger")
+            return redirect(url_for('admin_classes'))
+            
+        if (end_dt - class_dt).total_seconds() < 1800:
+            flash("Class duration must be at least 30 minutes.", "danger")
+            return redirect(url_for('admin_classes'))
+            
+        if class_dt <= datetime.datetime.now():
+            flash("Cannot schedule a class in the past.", "danger")
+            return redirect(url_for('admin_classes'))
+    except Exception as e:
+        flash("Invalid date or time format.", "danger")
+        return redirect(url_for('admin_classes'))
+        
     conn = get_connection()
     if conn:
         cursor = conn.cursor()
         try:
-            cursor.execute('''
-                INSERT INTO classes (subject_id, faculty_id, class_date, start_time, end_time)
-                VALUES (%s, %s, %s, %s, %s)
-            ''', (subject_id, faculty_id, class_date, start_time, end_time))
-            conn.commit()
-            flash('Class scheduled successfully!', 'success')
+            cursor.execute("SELECT faculty_id FROM subjects WHERE subject_id = %s", (subject_id,))
+            result = cursor.fetchone()
+            if result:
+                faculty_id = result[0]
+                
+                # Check for faculty schedule conflicts
+                cursor.execute('''
+                    SELECT class_id FROM classes 
+                    WHERE faculty_id = %s AND class_date = %s
+                    AND start_time < %s AND end_time > %s
+                ''', (faculty_id, class_date, end_time, start_time))
+                conflict = cursor.fetchone()
+                
+                if conflict:
+                    flash('Faculty already has a class scheduled during this time slot.', 'danger')
+                else:
+                    cursor.execute('''
+                        INSERT INTO classes (subject_id, faculty_id, class_date, start_time, end_time)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (subject_id, faculty_id, class_date, start_time, end_time))
+                    conn.commit()
+                    flash('Class scheduled successfully!', 'success')
+            else:
+                flash('Subject not found!', 'danger')
         except Exception as err:
             flash(f'Error scheduling class: {err}', 'danger')
         finally:
@@ -928,8 +967,17 @@ def delete_class(class_id):
         
     conn = get_connection()
     if conn:
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         try:
+            cursor.execute("SELECT class_date, start_time FROM classes WHERE class_id = %s", (class_id,))
+            cls = cursor.fetchone()
+            
+            if cls:
+                class_start_dt = datetime.datetime.combine(cls['class_date'], datetime.datetime.min.time()) + cls['start_time']
+                if class_start_dt <= datetime.datetime.now():
+                    flash('Cannot delete past or currently running classes.', 'danger')
+                    return redirect(url_for('admin_classes'))
+                    
             cursor.execute("DELETE FROM classes WHERE class_id = %s", (class_id,))
             conn.commit()
             flash('Class deleted successfully!', 'success')
