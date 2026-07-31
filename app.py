@@ -1,8 +1,12 @@
 import os
 import base64
+import json
+import face_recognition
+
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, session,redirect, url_for, flash, Response, jsonify
 import cv2
+import numpy as np
 from database import get_connection
 from flask_mail import Mail, Message
 import random
@@ -324,13 +328,169 @@ def face_registration():
                     with open(filepath, "wb") as f:
                         f.write(data)
                         
+                    if face_recognition is None:
+                        flash("Face recognition library is not installed. Please install it to use this feature.", "danger")
+                        return redirect(url_for('face_registration'))
+                        
+                    # Process image with face_recognition
+                    image_array = face_recognition.load_image_file(filepath)
+                    face_locations = face_recognition.face_locations(image_array)
+                    
+                    if len(face_locations) == 0:
+                        os.remove(filepath)
+                        flash("No face detected. Please ensure your face is clearly visible.", "danger")
+                        return redirect(url_for('face_registration'))
+                    elif len(face_locations) > 1:
+                        os.remove(filepath)
+                        flash("Multiple faces detected! Security violation. Only one person allowed.", "danger")
+                        return redirect(url_for('face_registration'))
+                        
+                    # 1. Distance / Size Check
+                    top, right, bottom, left = face_locations[0]
+                    face_area = (right - left) * (bottom - top)
+                    image_area = image_array.shape[0] * image_array.shape[1]
+                    face_ratio = face_area / image_area
+                    
+                    if face_ratio < 0.05:
+                        os.remove(filepath)
+                        flash("Face is too far away. Please move closer to the camera.", "danger")
+                        return redirect(url_for('face_registration'))
+                    elif face_ratio > 0.40:
+                        os.remove(filepath)
+                        flash("Face is too close. Please step back slightly from the camera.", "danger")
+                        return redirect(url_for('face_registration'))
+                        
+                    # 2. Brightness Check using OpenCV HSV values
+                    img_cv2 = cv2.imread(filepath)
+                    hsv = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2HSV)
+                    brightness = hsv[...,2].mean()
+                    
+                    if brightness < 70:
+                        os.remove(filepath)
+                        flash("Lighting is too dark! Please move to a brighter environment.", "danger")
+                        return redirect(url_for('face_registration'))
+                    elif brightness > 210:
+                        os.remove(filepath)
+                        flash("Lighting is too bright or overexposed! Please adjust your lighting.", "danger")
+                        return redirect(url_for('face_registration'))
+                        
+                    # 3. Liveness / Spoofing Check (Blur, Glare, Screen Border detection)
+                    gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+                    
+                    # A. Blur / Flatness Check
+                    laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+                    if laplacian_var < 150: # Stricter blur threshold for phone screens/photos
+                        os.remove(filepath)
+                        flash("Spoofing Detected: Image is too flat/blurry (possibly a photo or screen). Live face required!", "danger")
+                        return redirect(url_for('face_registration'))
+                        
+                    # B. Phone/Screen Border Detection (Straight Lines)
+                    edges = cv2.Canny(gray, 50, 150)
+                    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold=120, minLineLength=120, maxLineGap=10)
+                    if lines is not None and len(lines) >= 4:
+                        # Strong straight lines often mean a rectangular screen or photo border is visible
+                        os.remove(filepath)
+                        flash("Spoofing Detected: Screen or photo borders detected! Please use a live face.", "danger")
+                        return redirect(url_for('face_registration'))
+                        
+                    # C. Glare / Reflection Detection (Flash / Screen backlight)
+                    overexposed_pixels = np.sum(gray > 240)
+                    if (overexposed_pixels / gray.size) > 0.03: # >3% of image is pure white
+                        os.remove(filepath)
+                        flash("Spoofing Detected: Extreme glare/reflection found. Are you holding a screen or glossy photo?", "danger")
+                        return redirect(url_for('face_registration'))
+                        
+                    # 4. Occlusion Checks (Masks, Goggles, Caps)
+                    landmarks = face_recognition.face_landmarks(image_array, face_locations)
+                    if len(landmarks) > 0:
+                        lm = landmarks[0]
+                        
+                        # A. Goggles / Sunglasses check (Comparing Eye brightness to Cheek brightness)
+                        if 'left_eye' in lm and 'right_eye' in lm and 'chin' in lm:
+                            chin_pts = np.array(lm['chin'])
+                            if len(chin_pts) > 4:
+                                cheek_x, cheek_y = chin_pts[3][0], chin_pts[3][1]
+                                cheek_roi = img_cv2[max(0, cheek_y-10):cheek_y+10, max(0, cheek_x-10):cheek_x+10]
+                                
+                                left_eye_pts = np.array(lm['left_eye'])
+                                right_eye_pts = np.array(lm['right_eye'])
+                                eye_pts = np.vstack((left_eye_pts, right_eye_pts))
+                                x, y, w, h = cv2.boundingRect(eye_pts)
+                                
+                                pad = 10
+                                y1, y2 = max(0, y - pad), min(img_cv2.shape[0], y + h + pad)
+                                x1, x2 = max(0, x - pad), min(img_cv2.shape[1], x + w + pad)
+                                eye_roi = img_cv2[y1:y2, x1:x2]
+                                
+                                if eye_roi.size > 0 and cheek_roi.size > 0:
+                                    eye_hsv = cv2.cvtColor(eye_roi, cv2.COLOR_BGR2HSV).mean(axis=(0,1))
+                                    cheek_hsv = cv2.cvtColor(cheek_roi, cv2.COLOR_BGR2HSV).mean(axis=(0,1))
+                                    
+                                    # If the eyes are significantly darker than the cheek (sunglasses)
+                                    if eye_hsv[2] < cheek_hsv[2] * 0.6:
+                                        os.remove(filepath)
+                                        flash("Eyes not clearly visible! Please remove any goggles or dark glasses.", "danger")
+                                        return redirect(url_for('face_registration'))
+
+                        # B. Mask Check (Strict Variance)
+                        if 'bottom_lip' in lm and 'top_lip' in lm:
+                            mouth_pts = np.vstack((np.array(lm['bottom_lip']), np.array(lm['top_lip'])))
+                            mx, my, mw, mh = cv2.boundingRect(mouth_pts)
+                            
+                            pad_m = 10
+                            my1, my2 = max(0, my - pad_m), min(img_cv2.shape[0], my + mh + pad_m)
+                            mx1, mx2 = max(0, mx - pad_m), min(img_cv2.shape[1], mx + mw + pad_m)
+                            
+                            mouth_roi = gray[my1:my2, mx1:mx2]
+                            if mouth_roi.size > 0:
+                                mouth_var = cv2.Laplacian(mouth_roi, cv2.CV_64F).var()
+                                
+                                if mouth_var < 50: # Stricter variance threshold
+                                    os.remove(filepath)
+                                    flash("Face mask detected! Please remove your mask for registration.", "danger")
+                                    return redirect(url_for('face_registration'))
+                                    
+                        # C. Cap / Hat Check
+                        # Compare forehead color to cheek color
+                        if 'chin' in lm and 'left_eyebrow' in lm and 'right_eyebrow' in lm:
+                            chin_pts = np.array(lm['chin'])
+                            if len(chin_pts) > 4:
+                                cheek_x = chin_pts[3][0]
+                                cheek_y = chin_pts[3][1]
+                                cheek_roi = img_cv2[max(0, cheek_y-10):cheek_y+10, max(0, cheek_x-10):cheek_x+10]
+                                
+                                eyebrow_pts = np.vstack((np.array(lm['left_eyebrow']), np.array(lm['right_eyebrow'])))
+                                ex, ey, ew, eh = cv2.boundingRect(eyebrow_pts)
+                                fh_y = max(0, ey - 30) # Forehead region
+                                fh_roi = img_cv2[fh_y:ey, ex:ex+ew]
+                                
+                                if cheek_roi.size > 0 and fh_roi.size > 0:
+                                    cheek_hsv = cv2.cvtColor(cheek_roi, cv2.COLOR_BGR2HSV).mean(axis=(0,1))
+                                    fh_hsv = cv2.cvtColor(fh_roi, cv2.COLOR_BGR2HSV).mean(axis=(0,1))
+                                    
+                                    hue_diff = abs(cheek_hsv[0] - fh_hsv[0])
+                                    sat_diff = abs(cheek_hsv[1] - fh_hsv[1])
+                                    
+                                    if hue_diff > 30 or sat_diff > 50:
+                                        os.remove(filepath)
+                                        flash("Cap or hat or mask detected covering the forehead. Please remove it.", "danger")
+                                        return redirect(url_for('face_registration'))
+                        
+                    # Finally get encoding since all security checks passed
+                    encodings = face_recognition.face_encodings(image_array, known_face_locations=face_locations)
+                    if len(encodings) == 0:
+                        os.remove(filepath)
+                        flash("Could not generate face encoding. Please try again.", "danger")
+                        return redirect(url_for('face_registration'))
+                        
+                    encoding_json = json.dumps(encodings[0].tolist())
                     db_path = f"/static/faces/{filename}"
                     
                     cursor.execute('''
-                        INSERT INTO face_data (student_id, image_path) 
-                        VALUES (%s, %s) 
-                        ON DUPLICATE KEY UPDATE image_path = %s
-                    ''', (student_id, db_path, db_path))
+                        INSERT INTO face_data (student_id, image_path, face_encoding) 
+                        VALUES (%s, %s, %s) 
+                        ON DUPLICATE KEY UPDATE image_path = %s, face_encoding = %s
+                    ''', (student_id, db_path, encoding_json, db_path, encoding_json))
                     
                     conn.commit()
                     flash("Face registered successfully!", "success")
