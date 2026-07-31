@@ -377,11 +377,15 @@ def face_registration():
                     # 3. Liveness / Spoofing Check (Blur, Glare, Screen Border detection)
                     gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
                     
-                    # A. Blur / Flatness Check
+                    # A. Blur / Flatness / Screen Noise Check
                     laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-                    if laplacian_var < 150: # Stricter blur threshold for phone screens/photos
+                    if laplacian_var < 20: # Adjusted threshold for standard webcams
                         os.remove(filepath)
-                        flash("Spoofing Detected: Image is too flat/blurry (possibly a photo or screen). Live face required!", "danger")
+                        flash("Spoofing Detected: Image is extremely blurry. Live face required!", "danger")
+                        return redirect(url_for('face_registration'))
+                    elif laplacian_var > 1500: # Digital screen Moire patterns cause extreme variance spikes
+                        os.remove(filepath)
+                        flash("Spoofing Detected: Digital screen noise/pixels detected. Live face required!", "danger")
                         return redirect(url_for('face_registration'))
                         
                     # B. Phone/Screen Border Detection (Straight Lines)
@@ -445,36 +449,10 @@ def face_registration():
                             if mouth_roi.size > 0:
                                 mouth_var = cv2.Laplacian(mouth_roi, cv2.CV_64F).var()
                                 
-                                if mouth_var < 50: # Stricter variance threshold
+                                if mouth_var < 15: # Adjusted variance threshold for natural clean-shaven faces
                                     os.remove(filepath)
                                     flash("Face mask detected! Please remove your mask for registration.", "danger")
                                     return redirect(url_for('face_registration'))
-                                    
-                        # C. Cap / Hat Check
-                        # Compare forehead color to cheek color
-                        if 'chin' in lm and 'left_eyebrow' in lm and 'right_eyebrow' in lm:
-                            chin_pts = np.array(lm['chin'])
-                            if len(chin_pts) > 4:
-                                cheek_x = chin_pts[3][0]
-                                cheek_y = chin_pts[3][1]
-                                cheek_roi = img_cv2[max(0, cheek_y-10):cheek_y+10, max(0, cheek_x-10):cheek_x+10]
-                                
-                                eyebrow_pts = np.vstack((np.array(lm['left_eyebrow']), np.array(lm['right_eyebrow'])))
-                                ex, ey, ew, eh = cv2.boundingRect(eyebrow_pts)
-                                fh_y = max(0, ey - 30) # Forehead region
-                                fh_roi = img_cv2[fh_y:ey, ex:ex+ew]
-                                
-                                if cheek_roi.size > 0 and fh_roi.size > 0:
-                                    cheek_hsv = cv2.cvtColor(cheek_roi, cv2.COLOR_BGR2HSV).mean(axis=(0,1))
-                                    fh_hsv = cv2.cvtColor(fh_roi, cv2.COLOR_BGR2HSV).mean(axis=(0,1))
-                                    
-                                    hue_diff = abs(cheek_hsv[0] - fh_hsv[0])
-                                    sat_diff = abs(cheek_hsv[1] - fh_hsv[1])
-                                    
-                                    if hue_diff > 30 or sat_diff > 50:
-                                        os.remove(filepath)
-                                        flash("Cap or hat or mask detected covering the forehead. Please remove it.", "danger")
-                                        return redirect(url_for('face_registration'))
                         
                     # Finally get encoding since all security checks passed
                     encodings = face_recognition.face_encodings(image_array, known_face_locations=face_locations)
