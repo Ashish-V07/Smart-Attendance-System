@@ -1,3 +1,18 @@
+<style>
+	.user-profile {
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+	}
+
+	.user-profile img {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		margin-right: 10px;
+		object-fit: cover;
+	}
+</style>
 <header class="top-header">
 	<div class="d-flex align-items-center">
 		<i class="ti-menu mobile-toggle" id="mobile-toggle"></i>
@@ -8,15 +23,22 @@
 	</div>
 
 	<div class="header-actions">
-		<button class="icon-btn">
-			<i class="ti-bell"></i>
-			<span class="badge">3</span>
-		</button>
-		<div class="user-profile dropdown">
+
+		<div class="user-profile dropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
 			<img src="{{ session.get('profile_img', '/assets/img/Users/Admin/Admin.jpg') }}" alt="Admin">
 			<div class="user-info d-none d-sm-block">
-				<span style="font-weight: 600; font-size: 14px; color: #333;">{{ session.get('full_name', 'Admin User') }}</span>
+				<span style="font-weight: 600; font-size: 14px; color: #333;">{{ session.get('full_name', 'Admin User')
+					}} <i class="ti-angle-down" style="font-size: 12px; margin-left: 5px;"></i></span>
 			</div>
 		</div>
+		<ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 8px; margin-top: 10px;">
+			<li><a class="dropdown-item py-2" href="{{ url_for('admin_profile') }}"><i class="ti-settings me-2"></i>
+					Profile Settings</a></li>
+			<li>
+				<hr class="dropdown-divider">
+			</li>
+			<li><a class="dropdown-item py-2 text-danger" href="{{ url_for('logout') }}"><i
+						class="ti-power-off me-2"></i> Logout</a></li>
+		</ul>
 	</div>
 </header>

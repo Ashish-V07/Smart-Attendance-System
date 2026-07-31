@@ -1,3 +1,18 @@
+<style>
+	.sidebar {
+		overflow-y: auto;
+	}
+	.sidebar::-webkit-scrollbar {
+		width: 6px;
+	}
+	.sidebar::-webkit-scrollbar-thumb {
+		background-color: rgba(255, 255, 255, 0.2);
+		border-radius: 10px;
+	}
+	.sidebar::-webkit-scrollbar-track {
+		background-color: transparent;
+	}
+</style>
 <aside class="sidebar" id="sidebar">
 	<div class="logo-wrapper">
 		<!-- Replace with actual logo if needed -->
@@ -7,13 +22,11 @@
 		<li><a href="{{ url_for('admin_dashboard') }}"><i class="ti-dashboard"></i> Dashboard</a></li>
 		<li><a href="{{ url_for('admin_students') }}"><i class="ti-user"></i> Student Management</a></li>
 		<li><a href="{{ url_for('admin_faculty') }}"><i class="ti-id-badge"></i> Faculty Management</a></li>
-		<li><a href="#"><i class="ti-book"></i> Class & Subject</a></li>
+		<li><a href="{{ url_for('admin_subjects') }}"><i class="ti-book"></i> Subjects</a></li>
+		<li><a href="{{ url_for('admin_classes') }}"><i class="ti-blackboard"></i> Classes</a></li>
 		<li><a href="#"><i class="ti-calendar"></i> Attendance Tracking</a></li>
 		<li><a href="{{ url_for('face_registration') }}"><i class="ti-face-smile"></i> Face Registration</a></li>
 		<li><a href="{{ url_for('admin_feedback') }}"><i class="ti-comment-alt"></i>Feedbacks</a></li>
-		<li style="margin-top: 30px;"><a href="{{ url_for('admin_profile') }}"><i class="ti-settings"></i> Profile
-				Settings</a></li>
-		<li><a href="{{ url_for('logout') }}"><i class="ti-power-off"></i> Logout</a></li>
 	</ul>
 </aside>
 

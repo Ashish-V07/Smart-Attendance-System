@@ -776,6 +776,170 @@ def activate_student(user_id):
         return redirect(url_for('login'))
 
 
+# --- SUBJECT MANAGEMENT ---
+@app.route('/admin/subjects')
+def admin_subjects():
+    if 'user_id' not in session or session.get('role_id') != 1:
+        return redirect('/login')
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT s.subject_id, s.subject_name, s.subject_code, s.faculty_id,
+                   c.course_name, sem.semester_name, 
+                   u.full_name as faculty_name
+            FROM subjects s
+            LEFT JOIN courses c ON s.course_id = c.course_id
+            LEFT JOIN semesters sem ON s.semester_id = sem.semester_id
+            LEFT JOIN faculty f ON s.faculty_id = f.faculty_id
+            LEFT JOIN users u ON f.user_id = u.user_id
+        ''')
+        subjects = cursor.fetchall()
+        
+        cursor.execute("SELECT * FROM courses")
+        courses = cursor.fetchall()
+        cursor.execute("SELECT * FROM semesters")
+        semesters = cursor.fetchall()
+        cursor.execute("SELECT f.faculty_id as user_id, u.full_name as name FROM faculty f JOIN users u ON f.user_id = u.user_id")
+        faculties = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        return render_template('admin_subjects.html', subjects=subjects, courses=courses, semesters=semesters, faculties=faculties)
+    return redirect('/admin_dashboard')
+
+@app.route('/admin/subjects/add', methods=['POST'])
+def add_subject():
+    if 'user_id' not in session or session.get('role_id') != 1:
+        return redirect('/login')
+        
+    subject_name = request.form.get('subject_name')
+    subject_code = request.form.get('subject_code')
+    course_id = request.form.get('course_id')
+    semester_id = request.form.get('semester_id')
+    faculty_id = request.form.get('faculty_id')
+    
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                INSERT INTO subjects (course_id, semester_id, faculty_id, subject_name, subject_code)
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (course_id, semester_id, faculty_id, subject_name, subject_code))
+            conn.commit()
+            flash('Subject added successfully!', 'success')
+        except Exception as err:
+            flash(f'Error adding subject: {err}', 'danger')
+        finally:
+            cursor.close()
+            conn.close()
+    return redirect(url_for('admin_subjects'))
+
+@app.route('/admin/subjects/delete/<int:subject_id>', methods=['POST'])
+def delete_subject(subject_id):
+    if 'user_id' not in session or session.get('role_id') != 1:
+        return redirect('/login')
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("DELETE FROM subjects WHERE subject_id = %s", (subject_id,))
+            conn.commit()
+            flash('Subject deleted successfully!', 'success')
+        except Exception as err:
+            flash(f'Error deleting subject (might be referenced in classes): {err}', 'danger')
+        finally:
+            cursor.close()
+            conn.close()
+    return redirect(url_for('admin_subjects'))
+
+
+# --- CLASS MANAGEMENT ---
+@app.route('/admin/classes')
+def admin_classes():
+    if 'user_id' not in session or session.get('role_id') != 1:
+        return redirect('/login')
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT c.class_id, c.class_date, c.start_time, c.end_time,
+                   s.subject_name, u.full_name as faculty_name
+            FROM classes c
+            LEFT JOIN subjects s ON c.subject_id = s.subject_id
+            LEFT JOIN faculty f ON c.faculty_id = f.faculty_id
+            LEFT JOIN users u ON f.user_id = u.user_id
+            ORDER BY c.class_date DESC, c.start_time DESC
+        ''')
+        classes = cursor.fetchall()
+        
+        cursor.execute("SELECT subject_id, subject_name FROM subjects")
+        subjects = cursor.fetchall()
+        cursor.execute("SELECT f.faculty_id as user_id, u.full_name as name FROM faculty f JOIN users u ON f.user_id = u.user_id")
+        faculties = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        for c in classes:
+            if c['start_time']: c['start_time'] = str(c['start_time'])
+            if c['end_time']: c['end_time'] = str(c['end_time'])
+            if c['class_date']: c['class_date'] = str(c['class_date'])
+
+        return render_template('admin_classes.html', classes=classes, subjects=subjects, faculties=faculties)
+    return redirect('/admin_dashboard')
+
+@app.route('/admin/classes/add', methods=['POST'])
+def add_class():
+    if 'user_id' not in session or session.get('role_id') != 1:
+        return redirect('/login')
+        
+    subject_id = request.form.get('subject_id')
+    faculty_id = request.form.get('faculty_id')
+    class_date = request.form.get('class_date')
+    start_time = request.form.get('start_time')
+    end_time = request.form.get('end_time')
+    
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                INSERT INTO classes (subject_id, faculty_id, class_date, start_time, end_time)
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (subject_id, faculty_id, class_date, start_time, end_time))
+            conn.commit()
+            flash('Class scheduled successfully!', 'success')
+        except Exception as err:
+            flash(f'Error scheduling class: {err}', 'danger')
+        finally:
+            cursor.close()
+            conn.close()
+    return redirect(url_for('admin_classes'))
+
+@app.route('/admin/classes/delete/<int:class_id>', methods=['POST'])
+def delete_class(class_id):
+    if 'user_id' not in session or session.get('role_id') != 1:
+        return redirect('/login')
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("DELETE FROM classes WHERE class_id = %s", (class_id,))
+            conn.commit()
+            flash('Class deleted successfully!', 'success')
+        except Exception as err:
+            flash(f'Error deleting class: {err}', 'danger')
+        finally:
+            cursor.close()
+            conn.close()
+    return redirect(url_for('admin_classes'))
+
 #default functions
 
 def send_otp(email,otp):
