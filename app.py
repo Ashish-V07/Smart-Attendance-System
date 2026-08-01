@@ -86,6 +86,10 @@ def login_check():
 
     cursor.close()
     conn.close()
+    if user is None:
+        flash("Invalid email or password", "danger")
+        return redirect(url_for("login"))
+        
     if user[4]==None:
         flash("Please Forgot your password first!.", "danger")
         return redirect(url_for("forgot_password"))
@@ -988,6 +992,277 @@ def delete_class(class_id):
             conn.close()
     return redirect(url_for('admin_classes'))
 
+# --- FACULTY MODULES ---
+@app.route('/faculty_dashboard')
+def faculty_dashboard():
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return redirect('/login')
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT faculty_id FROM faculty WHERE user_id = %s", (session['user_id'],))
+        fac = cursor.fetchone()
+        if not fac:
+            return "Faculty record not found", 403
+            
+        faculty_id = fac['faculty_id']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM subjects WHERE faculty_id = %s", (faculty_id,))
+        total_subjects = cursor.fetchone()['count']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM classes WHERE faculty_id = %s", (faculty_id,))
+        total_classes = cursor.fetchone()['count']
+        
+        cursor.execute('''
+            SELECT u.full_name, r.role_name, a.attendance_time, a.status, u.profile_img, s.subject_name
+            FROM attendance a
+            JOIN students st ON a.student_id = st.student_id
+            JOIN users u ON st.user_id = u.user_id
+            JOIN roles r ON u.role_id = r.role_id
+            JOIN classes c ON a.class_id = c.class_id
+            JOIN subjects s ON c.subject_id = s.subject_id
+            WHERE c.faculty_id = %s
+            ORDER BY a.attendance_time DESC
+            LIMIT 5
+        ''', (faculty_id,))
+        recent_attendance = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('faculty_dashboard.html', 
+                               total_subjects=total_subjects, 
+                               total_classes=total_classes,
+                               recent_attendance=recent_attendance)
+    return redirect('/login')
+
+@app.route('/faculty_subjects')
+def faculty_subjects():
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return redirect('/login')
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT faculty_id FROM faculty WHERE user_id = %s", (session['user_id'],))
+        fac = cursor.fetchone()
+        if fac:
+            cursor.execute('''
+                SELECT s.subject_id, s.subject_name, s.subject_code,
+                       c.course_name, sem.semester_name
+                FROM subjects s
+                LEFT JOIN courses c ON s.course_id = c.course_id
+                LEFT JOIN semesters sem ON s.semester_id = sem.semester_id
+                WHERE s.faculty_id = %s
+            ''', (fac['faculty_id'],))
+            subjects = cursor.fetchall()
+        else:
+            subjects = []
+            
+        cursor.close()
+        conn.close()
+        return render_template('faculty_subjects.html', subjects=subjects)
+    return redirect('/login')
+
+@app.route('/faculty_classes')
+def faculty_classes():
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return redirect('/login')
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT faculty_id FROM faculty WHERE user_id = %s", (session['user_id'],))
+        fac = cursor.fetchone()
+        if fac:
+            cursor.execute('''
+                SELECT c.class_id, c.class_date, c.start_time, c.end_time, c.attendance_started,
+                       s.subject_name, s.subject_code
+                FROM classes c
+                LEFT JOIN subjects s ON c.subject_id = s.subject_id
+                WHERE c.faculty_id = %s
+                ORDER BY c.class_date DESC, c.start_time DESC
+            ''', (fac['faculty_id'],))
+            all_classes = cursor.fetchall()
+            
+            now = datetime.datetime.now()
+            today_date = now.date()
+            current_time = now.time()
+            
+            live_classes = []
+            upcoming_classes = []
+            past_classes = []
+            
+            for c in all_classes:
+                c_date = c['class_date']
+                # Start and end are timedelta, convert to time
+                s_time = (datetime.datetime.min + c['start_time']).time()
+                e_time = (datetime.datetime.min + c['end_time']).time()
+                
+                # Format strings for display
+                c['start_time_str'] = s_time.strftime('%I:%M %p')
+                c['end_time_str'] = e_time.strftime('%I:%M %p')
+                c['class_date_str'] = str(c_date)
+                
+                if c_date < today_date:
+                    past_classes.append(c)
+                elif c_date > today_date:
+                    upcoming_classes.append(c)
+                else:
+                    if current_time > e_time:
+                        past_classes.append(c)
+                    elif current_time < s_time:
+                        upcoming_classes.append(c)
+                    else:
+                        # Auto-start logic
+                        import datetime as dt
+                        s_dt = dt.datetime.combine(today_date, s_time)
+                        if c['attendance_started'] == 1 or now >= (s_dt + dt.timedelta(minutes=10)):
+                            c['is_attendance_open'] = True
+                        else:
+                            c['is_attendance_open'] = False
+                        live_classes.append(c)
+        else:
+            live_classes, upcoming_classes, past_classes = [], [], []
+            
+        cursor.close()
+        conn.close()
+        return render_template('faculty_classes.html', 
+                               live_classes=live_classes,
+                               upcoming_classes=upcoming_classes,
+                               past_classes=past_classes)
+    return redirect('/login')
+
+@app.route('/faculty_start_attendance/<int:class_id>')
+def faculty_start_attendance(class_id):
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return redirect('/login')
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        # Verify class belongs to this faculty
+        cursor.execute("SELECT faculty_id FROM faculty WHERE user_id = %s", (session['user_id'],))
+        fac = cursor.fetchone()
+        if fac:
+            cursor.execute('''
+                SELECT c.*, s.subject_name, s.subject_code 
+                FROM classes c
+                JOIN subjects s ON c.subject_id = s.subject_id
+                WHERE c.class_id = %s AND c.faculty_id = %s
+            ''', (class_id, fac['faculty_id']))
+            cls = cursor.fetchone()
+            if cls:
+                cursor.execute('UPDATE classes SET attendance_started = 1 WHERE class_id = %s', (class_id,))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                return render_template('take_attendance.html', cls=cls)
+        
+        cursor.close()
+        conn.close()
+        flash("Class not found or unauthorized.", "danger")
+        return redirect(url_for('faculty_classes'))
+    return redirect('/login')
+
+@app.route('/api/get_live_attendance/<int:class_id>')
+def get_live_attendance(class_id):
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute('''
+            SELECT u.full_name, a.attendance_time 
+            FROM attendance a
+            JOIN students s ON a.student_id = s.student_id
+            JOIN users u ON s.user_id = u.user_id
+            WHERE a.class_id = %s
+            ORDER BY a.attendance_time DESC
+        ''', (class_id,))
+        records = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        for r in records:
+            if r['attendance_time']:
+                r['attendance_time'] = r['attendance_time'].strftime('%I:%M:%S %p')
+        return jsonify(records)
+    return jsonify({'error': 'Database connection failed'}), 500
+
+@app.route('/faculty_attendance')
+def faculty_attendance():
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return redirect('/login')
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT faculty_id FROM faculty WHERE user_id = %s", (session['user_id'],))
+        fac = cursor.fetchone()
+        if fac:
+            cursor.execute('''
+                SELECT a.attendance_id, a.attendance_time, a.status,
+                       u.full_name as student_name, c.class_date, s.subject_name
+                FROM attendance a
+                JOIN students st ON a.student_id = st.student_id
+                JOIN users u ON st.user_id = u.user_id
+                JOIN classes c ON a.class_id = c.class_id
+                JOIN subjects s ON c.subject_id = s.subject_id
+                WHERE c.faculty_id = %s
+                ORDER BY c.class_date DESC, a.attendance_time DESC
+            ''', (fac['faculty_id'],))
+            attendances = cursor.fetchall()
+            for a in attendances:
+                if a['class_date']: a['class_date'] = str(a['class_date'])
+        else:
+            attendances = []
+            
+        cursor.close()
+        conn.close()
+        return render_template('faculty_attendance.html', attendances=attendances)
+    return redirect('/login')
+
+@app.route('/faculty_profile')
+def faculty_profile():
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return redirect('/login')
+    return render_template('faculty_profile.html')
+
+@app.route('/faculty_profile_update', methods=['POST'])
+def faculty_profile_update():
+    if session.get('user_id') and session.get('role_id') == 2:
+        full_name = request.form.get('full_name')
+        
+        # Handle file upload
+        profile_img_path = session.get('profile_img')
+        if 'profile_img' in request.files:
+            file = request.files['profile_img']
+            if file.filename != '':
+                filename = secure_filename(file.filename)
+                upload_folder = os.path.join(app.root_path, 'assets', 'img', 'Users', 'Faculty')
+                os.makedirs(upload_folder, exist_ok=True)
+                file.save(os.path.join(upload_folder, filename))
+                profile_img_path = f'/assets/img/Users/Faculty/{filename}'
+        
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('UPDATE users SET full_name=%s, profile_img=%s WHERE user_id=%s', (full_name, profile_img_path, session['user_id']))
+            conn.commit()
+            session['full_name'] = full_name
+            session['profile_img'] = profile_img_path
+            flash('Profile updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error updating profile: {e}', 'danger')
+        finally:
+            cursor.close()
+            conn.close()
+            
+    return redirect(url_for('faculty_profile'))
+    
 #default functions
 
 def send_otp(email,otp):

@@ -1,0 +1,42 @@
+<style>
+	.sidebar {
+		overflow-y: auto;
+	}
+	.sidebar::-webkit-scrollbar {
+		width: 6px;
+	}
+	.sidebar::-webkit-scrollbar-thumb {
+		background-color: rgba(255, 255, 255, 0.2);
+		border-radius: 10px;
+	}
+	.sidebar::-webkit-scrollbar-track {
+		background-color: transparent;
+	}
+</style>
+<aside class="sidebar" id="sidebar">
+	<div class="logo-wrapper">
+		<h4>Smart<span>Attend</span></h4>
+	</div>
+	<ul class="sidebar-menu" id="facultySidebarMenu">
+		<li><a href="{{ url_for('faculty_dashboard') }}"><i class="ti-dashboard"></i> Dashboard</a></li>
+		<li><a href="{{ url_for('faculty_subjects') }}"><i class="ti-book"></i> My Subjects</a></li>
+		<li><a href="{{ url_for('faculty_classes') }}"><i class="ti-blackboard"></i> My Classes</a></li>
+		<li><a href="{{ url_for('faculty_attendance') }}"><i class="ti-calendar"></i> Attendance Records</a></li>
+	</ul>
+</aside>
+
+<script>
+	// Highlight active menu item based on current URL
+	document.addEventListener("DOMContentLoaded", function () {
+		const currentUrl = window.location.pathname.split('/').pop();
+		const menuItems = document.querySelectorAll('#facultySidebarMenu li a');
+		menuItems.forEach(item => {
+			const itemUrl = item.getAttribute('href').split('/').pop();
+			if (itemUrl === currentUrl || (currentUrl === '' && itemUrl === 'faculty_dashboard')) {
+				item.parentElement.classList.add('active');
+			} else {
+				item.parentElement.classList.remove('active');
+			}
+		});
+	});
+</script>
