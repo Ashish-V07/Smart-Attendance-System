@@ -9,15 +9,16 @@
 	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 	<link rel="stylesheet" href="{{ url_for('static', filename='fonts/themify-icons.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 <body>
-	{% include 'components/faculty_sidebar.html' %}
+	{% include 'components/student_sidebar.html' %}
 
 	<main class="main-content" id="main-content">
 		{% include 'components/admin_header.html' %}
 		
 		<div class="dashboard-container">
+			{% include 'components/Error_Show.html' %}
 			<div class="page-title">
 				<h2>My Scheduled Classes</h2>
 			</div>
@@ -35,7 +36,7 @@
 								<th>Time</th>
 								<th>Subject</th>
 								<th>Subject Code</th>
-								<th>Action</th>
+								<th>Status/Action</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -46,10 +47,16 @@
 								<td>{{ cls.subject_name }}</td>
 								<td>{{ cls.subject_code }}</td>
 								<td>
-									{% if cls.is_attendance_open %}
-									<a href="{{ url_for('faculty_start_attendance', class_id=cls.class_id) }}" class="btn-custom bg-info text-white" style="text-decoration: none;"><i class="ti-eye me-1"></i> Monitor</a>
+									{% if not cls.is_attendance_open %}
+										<span class="badge bg-secondary p-2"><i class="ti-time me-1"></i> Waiting for Faculty</span>
+									{% elif cls.already_marked %}
+										<span class="badge bg-success p-2"><i class="ti-check me-1"></i> Present Marked</span>
 									{% else %}
-									<a href="{{ url_for('faculty_start_attendance', class_id=cls.class_id) }}" class="btn-custom bg-success text-white" style="text-decoration: none;"><i class="ti-control-play me-1"></i> Start</a>
+										{% if face_registered == 1 %}
+										<a href="{{ url_for('student_mark_attendance', class_id=cls.class_id) }}" class="btn-custom bg-success text-white" style="text-decoration: none; padding: 5px 12px; font-size: 13px;"><i class="fas fa-camera me-1"></i> Mark Attendance</a>
+										{% else %}
+										<button class="btn-custom bg-secondary text-white border-0" disabled style="padding: 5px 12px; font-size: 13px;"><i class="fas fa-exclamation-triangle me-1"></i> Contact Admin</button>
+										{% endif %}
 									{% endif %}
 								</td>
 							</tr>
@@ -66,7 +73,7 @@
 			<!-- Upcoming Classes -->
 			<div class="table-card mb-4">
 				<div class="table-header">
-					<h4>Upcoming Today</h4>
+					<h4>Upcoming Classes</h4>
 				</div>
 				<div class="table-responsive">
 					<table class="table">
@@ -88,7 +95,7 @@
 							</tr>
 							{% else %}
 							<tr>
-								<td colspan="4" class="text-center text-muted py-3">No more upcoming classes today.</td>
+								<td colspan="4" class="text-center text-muted py-3">No more upcoming classes scheduled.</td>
 							</tr>
 							{% endfor %}
 						</tbody>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>My Attendance - Smart Attendance System</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+	<link
+		href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+		rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='fonts/themify-icons.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+
+<body>
+	{% include 'components/student_sidebar.html' %}
+
+	<main class="main-content" id="main-content">
+		{% include 'components/admin_header.html' %}
+
+		<div class="dashboard-container">
+			<div class="page-title">
+				<h2>My Attendance Overview</h2>
+			</div>
+
+			<!-- Subject wise attendance -->
+			<div class="row mb-4">
+				{% for sub in subject_stats %}
+				<div class="col-lg-4 col-md-6 mb-3">
+					<div class="summary-card h-100 flex-column align-items-start">
+						<div class="w-100 d-flex justify-content-between align-items-center mb-3">
+							<h5 class="mb-0 text-dark font-weight-bold" style="font-size: 16px;">{{ sub.subject_name }}
+							</h5>
+							<span class="badge bg-light text-dark border">{{ sub.subject_code }}</span>
+						</div>
+						<div class="w-100">
+							<div class="d-flex justify-content-between mb-1">
+								<span class="text-muted" style="font-size: 13px;">{{ sub.attended }} / {{ sub.total }}
+									Classes</span>
+								<strong
+									class="{% if sub.percent >= 75 %}text-success{% elif sub.percent >= 60 %}text-warning{% else %}text-danger{% endif %}">{{
+									sub.percent }}%</strong>
+							</div>
+							<div class="progress" style="height: 8px;">
+								<div class="progress-bar {% if sub.percent >= 75 %}bg-success{% elif sub.percent >= 60 %}bg-warning{% else %}bg-danger{% endif %}"
+									role="progressbar" style="width: {{ sub.percent }}%"
+									aria-valuenow="{{ sub.percent }}" aria-valuemin="0" aria-valuemax="100">
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				{% else %}
+				<div class="col-12">
+					<div class="alert alert-info">You are not enrolled in any subjects currently.</div>
+				</div>
+				{% endfor %}
+			</div>
+
+			<div class="table-card">
+				<div class="table-header">
+					<h4>Detailed Attendance History</h4>
+				</div>
+				<div class="table-responsive">
+					<table class="table">
+						<thead>
+							<tr>
+								<th>Subject</th>
+								<th>Class Date</th>
+								<th>Marked Time</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for a in attendances %}
+							<tr>
+								<td><strong>{{ a.subject_name }}</strong> <br><small class="text-muted">{{
+										a.subject_code }}</small></td>
+								<td>{{ a.class_date }}</td>
+								<td>{{ a.attendance_time.strftime('%I:%M %p, %b %d') if a.attendance_time else '--' }}
+								</td>
+								<td>
+									{% if a.status|lower == 'present' %}
+									<span class="status-badge status-present">Present</span>
+									{% elif a.status|lower == 'late' %}
+									<span class="status-badge status-late">Late</span>
+									{% else %}
+									<span class="status-badge status-absent">{{ a.status }}</span>
+									{% endif %}
+								</td>
+							</tr>
+							{% else %}
+							<tr>
+								<td colspan="4" class="text-center text-muted py-4">No attendance records found.</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+		$(document).ready(function () {
+			$('#mobile-toggle').click(function () {
+				$('#sidebar').toggleClass('active');
+			});
+		});
+	</script>
+</body>
+
+</html>
