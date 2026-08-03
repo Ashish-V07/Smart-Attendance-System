@@ -1242,7 +1242,10 @@ def faculty_profile():
 def faculty_profile_update():
     if session.get('user_id') and session.get('role_id') == 2:
         full_name = request.form.get('full_name')
-        
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
         # Handle file upload
         profile_img_path = session.get('profile_img')
         if 'profile_img' in request.files:
@@ -1255,8 +1258,25 @@ def faculty_profile_update():
                 profile_img_path = f'/assets/img/Users/Faculty/{filename}'
         
         conn = get_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         try:
+            if new_password:
+                if new_password != confirm_password:
+                    flash('New password and confirm password do not match!', 'danger')
+                    return redirect(url_for('faculty_profile'))
+                    
+                cursor.execute("SELECT password FROM users WHERE user_id = %s", (session['user_id'],))
+                user_record = cursor.fetchone()
+                from werkzeug.security import check_password_hash, generate_password_hash
+                
+                if user_record and check_password_hash(user_record['password'], current_password):
+                    hashed_pwd = generate_password_hash(new_password)
+                    cursor.execute("UPDATE users SET password = %s WHERE user_id = %s", (hashed_pwd, session['user_id']))
+                else:
+                    flash('Incorrect current password!', 'danger')
+                    return redirect(url_for('faculty_profile'))
+            
+            # Use raw cursor for the rest if needed, but dictionary is fine for UPDATE
             cursor.execute('UPDATE users SET full_name=%s, profile_img=%s WHERE user_id=%s', (full_name, profile_img_path, session['user_id']))
             conn.commit()
             session['full_name'] = full_name
@@ -1602,10 +1622,30 @@ def student_profile_update():
         
     full_name = request.form.get('full_name')
     profile_img = request.files.get('profile_img')
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
     
     conn = get_connection()
     if conn:
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
+        
+        if new_password:
+            if new_password != confirm_password:
+                flash('New password and confirm password do not match!', 'danger')
+                return redirect(url_for('student_profile'))
+                
+            cursor.execute("SELECT password FROM users WHERE user_id = %s", (session['user_id'],))
+            user_record = cursor.fetchone()
+            from werkzeug.security import check_password_hash, generate_password_hash
+            
+            if user_record and check_password_hash(user_record['password'], current_password):
+                hashed_pwd = generate_password_hash(new_password)
+                cursor.execute("UPDATE users SET password = %s WHERE user_id = %s", (hashed_pwd, session['user_id']))
+            else:
+                flash('Incorrect current password!', 'danger')
+                return redirect(url_for('student_profile'))
+                
         if full_name:
             cursor.execute("UPDATE users SET full_name = %s WHERE user_id = %s", (full_name, session['user_id']))
             session['full_name'] = full_name

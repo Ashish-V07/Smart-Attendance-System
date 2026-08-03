@@ -27,57 +27,87 @@
 				<h2>Profile Settings</h2>
 			</div>
 
-			<div class="row justify-content-center">
-				<div class="col-lg-8">
-					<div class="table-card">
-						<div class="card-body">
-							<form action="{{ url_for('student_profile_update') }}" method="POST" enctype="multipart/form-data">
-								<div class="profile-img-container position-relative">
-									<img src="{{ session.get('profile_img', '/assets/img/Users/Student/Default.jpg') }}" alt="Profile" id="previewImg">
-									<div>
-										<label for="profile_img" class="btn btn-sm btn-outline-dark mt-2">Change Picture</label>
-										<input type="file" id="profile_img" name="profile_img" class="d-none" accept="image/*" onchange="previewImage(event)">
-									</div>
-								</div>
-
-								<div class="card bg-light border-0 mb-4 p-3 text-center">
-									<h5 class="mb-2">Biometric Security Status</h5>
-									{% if info.face_registered == 1 %}
-									<div class="text-success mb-2"><i class="fas fa-check-circle fa-2x"></i></div>
-									<p class="text-success fw-bold mb-0">Face Registered</p>
-									<p class="text-muted small">Your biometrics are secured and you are eligible to log attendance.</p>
-									{% else %}
-									<div class="text-danger mb-2"><i class="fas fa-times-circle fa-2x"></i></div>
-									<p class="text-danger fw-bold mb-0">Face Not Registered</p>
-									<p class="text-muted small mb-3">You must contact an administrator to register your face.</p>
-									<button class="btn btn-secondary text-white" disabled><i class="fas fa-fingerprint me-2"></i> Contact Admin</button>
-									{% endif %}
-								</div>
-
-								<div class="row">
-									<div class="col-md-6 mb-3">
-										<label class="form-label">Full Name</label>
-										<input type="text" class="form-control" name="full_name" value="{{ session.get('full_name', '') }}" required>
-									</div>
-									<div class="col-md-6 mb-3">
-										<label class="form-label">Email (Read Only)</label>
-										<input type="email" class="form-control" value="{{ session.get('email', '') }}" readonly>
-									</div>
-									<div class="col-md-6 mb-3">
-										<label class="form-label">Course</label>
-										<input type="text" class="form-control" value="{{ info.course_name }}" readonly>
-									</div>
-									<div class="col-md-6 mb-3">
-										<label class="form-label">Semester</label>
-										<input type="text" class="form-control" value="{{ info.semester_name }}" readonly>
-									</div>
-								</div>
-								
-								<div class="text-end mt-4">
-									<button type="submit" class="btn btn-custom">Save Changes</button>
-								</div>
-							</form>
+			<div class="row">
+				<!-- Profile Overview Column -->
+				<div class="col-xl-4 col-lg-5">
+					<div class="profile-card text-center p-4 bg-white rounded shadow-sm border mb-4">
+						<div class="profile-header">
+							<img src="{{ session.get('profile_img', '/assets/img/Users/Student/Default.jpg') }}" alt="Profile" id="previewImg" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid var(--bg-light); box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px;">
+							<h3 class="fw-bold mb-1">{{ session.get('full_name', 'Student User') }}</h3>
+							<p class="text-muted">{{ info.course_name }} - Sem {{ info.semester_name }}</p>
 						</div>
+						<hr>
+						<div class="mt-4 text-start px-3">
+							<p><strong><i class="ti-email me-2"></i> Email:</strong> <br> <span class="text-muted">{{ session.get('email', '') }}</span></p>
+							<p><strong><i class="ti-id-badge me-2"></i> Enrollment:</strong> <br> <span class="text-muted">Active Student</span></p>
+						</div>
+
+						<!-- Biometric Security Status -->
+						<div class="card bg-light border-0 mt-4 p-3 text-center mx-2">
+							<h6 class="mb-2 fw-bold">Biometric Security Status</h6>
+							{% if info.face_registered == 1 %}
+							<div class="text-success mb-2"><i class="fas fa-check-circle fa-2x"></i></div>
+							<p class="text-success fw-bold mb-0">Face Registered</p>
+							<p class="text-muted small mb-0">Your biometrics are secured and you are eligible to log attendance.</p>
+							{% else %}
+							<div class="text-danger mb-2"><i class="fas fa-times-circle fa-2x"></i></div>
+							<p class="text-danger fw-bold mb-0">Face Not Registered</p>
+							<p class="text-muted small mb-3">You must contact an administrator to register your face.</p>
+							<button class="btn btn-secondary btn-sm text-white w-100" disabled><i class="fas fa-fingerprint me-2"></i> Contact Admin</button>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+
+				<!-- Settings Forms Column -->
+				<div class="col-xl-8 col-lg-7">
+					<!-- Edit Profile -->
+					<div class="profile-card bg-white rounded shadow-sm border p-4 mb-4">
+						<h4 class="card-title border-bottom pb-3 mb-4 fw-bold">Edit Profile Information</h4>
+						<form action="{{ url_for('student_profile_update') }}" method="POST" enctype="multipart/form-data">
+							<div class="row">
+								<div class="col-md-12 mb-3">
+									<label class="form-label fw-bold">Full Name</label>
+									<input type="text" class="form-control bg-light" name="full_name" value="{{ session.get('full_name', '') }}" required>
+								</div>
+								<div class="col-md-6 mb-3">
+									<label class="form-label fw-bold">Profile Image</label>
+									<input type="file" id="profile_img" name="profile_img" class="form-control bg-light" accept="image/*" onchange="previewImage(event)">
+								</div>
+								<div class="col-md-6 mb-3">
+									<label class="form-label fw-bold">Email Address</label>
+									<input type="email" class="form-control bg-light" value="{{ session.get('email', '') }}" readonly>
+								</div>
+								<div class="col-md-12 mt-2 text-end">
+									<button type="submit" class="btn btn-custom px-4">Save Changes</button>
+								</div>
+							</div>
+						</form>
+					</div>
+
+					<!-- Change Password -->
+					<div class="profile-card bg-white rounded shadow-sm border p-4 mb-4">
+						<h4 class="card-title border-bottom pb-3 mb-4 fw-bold">Security & Password</h4>
+						<form action="{{ url_for('student_profile_update') }}" method="POST">
+							<input type="hidden" name="full_name" value="{{ session.get('full_name', '') }}">
+							<div class="row">
+								<div class="col-md-12 mb-3">
+									<label class="form-label fw-bold">Current Password</label>
+									<input type="password" class="form-control bg-light" name="current_password" placeholder="Enter current password" required>
+								</div>
+								<div class="col-md-6 mb-3">
+									<label class="form-label fw-bold">New Password</label>
+									<input type="password" class="form-control bg-light" name="new_password" placeholder="Enter new password" required>
+								</div>
+								<div class="col-md-6 mb-3">
+									<label class="form-label fw-bold">Confirm New Password</label>
+									<input type="password" class="form-control bg-light" name="confirm_password" placeholder="Confirm new password" required>
+								</div>
+								<div class="col-md-12 mt-2 text-end">
+									<button type="submit" class="btn btn-custom px-4">Update Password</button>
+								</div>
+							</div>
+						</form>
 					</div>
 				</div>
 			</div>
