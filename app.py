@@ -1543,8 +1543,10 @@ def student_attendance():
             attendances = cursor.fetchall()
             
             cursor.execute('''
-                SELECT s.subject_name, s.subject_code, s.subject_id
+                SELECT s.subject_name, s.subject_code, s.subject_id, u.full_name as faculty_name
                 FROM subjects s
+                LEFT JOIN faculty f ON s.faculty_id = f.faculty_id
+                LEFT JOIN users u ON f.user_id = u.user_id
                 WHERE s.course_id = %s AND s.semester_id = %s
             ''', (student['course_id'], student['semester_id']))
             subjects = cursor.fetchall()

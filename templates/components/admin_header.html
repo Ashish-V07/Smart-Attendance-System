@@ -32,7 +32,7 @@
 			</div>
 		</div>
 		<ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 8px; margin-top: 10px;">
-			<li><a class="dropdown-item py-2" href="{% if session.get('role_id') == 2 %}{{ url_for('faculty_profile') }}{% else %}{{ url_for('admin_profile') }}{% endif %}"><i class="ti-settings me-2"></i>
+			<li><a class="dropdown-item py-2" href="{% if session.get('role_id') == 3 %}{{ url_for('student_profile') }}{% elif session.get('role_id') == 2 %}{{ url_for('faculty_profile') }}{% else %}{{ url_for('admin_profile') }}{% endif %}"><i class="ti-settings me-2"></i>
 					Profile Settings</a></li>
 			<li>
 				<hr class="dropdown-divider">
