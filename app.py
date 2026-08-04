@@ -15,6 +15,52 @@ import time
 import datetime
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
+
+@app.before_request
+def auto_close_expired_classes():
+    # Only run this logic for logged-in users to save overhead on static assets
+    if not session.get('user_id'):
+        return
+        
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        # Find classes where attendance is open, but time has passed.
+        # We assume class_date + end_time is the absolute expiration time
+        cursor.execute('''
+            SELECT c.class_id, c.subject_id
+            FROM classes c
+            WHERE c.attendance_started = 1
+            AND CONCAT(c.class_date, ' ', c.end_time) < NOW()
+        ''')
+        expired_classes = cursor.fetchall()
+        
+        if expired_classes:
+            from datetime import datetime
+            for cls in expired_classes:
+                # 1. Close attendance
+                cursor.execute('UPDATE classes SET attendance_started = 0 WHERE class_id = %s', (cls['class_id'],))
+                
+                # 2. Insert Absent records for everyone who missed it
+                cursor.execute('''
+                    SELECT st.student_id 
+                    FROM students st
+                    JOIN subjects s ON st.course_id = s.course_id AND st.semester_id = s.semester_id
+                    WHERE s.subject_id = %s
+                ''', (cls['subject_id'],))
+                enrolled_students = cursor.fetchall()
+                
+                for student in enrolled_students:
+                    cursor.execute('''
+                        INSERT INTO attendance (student_id, class_id, status, attendance_time, confidence_score)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE student_id=student_id
+                    ''', (student['student_id'], cls['class_id'], 'Absent', datetime.now(), 0.0))
+                    
+            conn.commit()
+        cursor.close()
+        conn.close()
+
 app.secret_key = '@Yash_(05-smart-attendance-system-15)_Ashish@'
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -1123,13 +1169,7 @@ def faculty_classes():
                     elif current_time < s_time:
                         upcoming_classes.append(c)
                     else:
-                        # Auto-start logic
-                        import datetime as dt
-                        s_dt = dt.datetime.combine(today_date, s_time)
-                        if c['attendance_started'] == 1 or now >= (s_dt + dt.timedelta(minutes=10)):
-                            c['is_attendance_open'] = True
-                        else:
-                            c['is_attendance_open'] = False
+                        c['is_attendance_open'] = (c['attendance_started'] == 1)
                         live_classes.append(c)
         else:
             live_classes, upcoming_classes, past_classes = [], [], []
@@ -1174,58 +1214,6 @@ def faculty_start_attendance(class_id):
         return redirect(url_for('faculty_classes'))
     return redirect('/login')
 
-
-@app.route('/faculty_stop_attendance/<int:class_id>')
-def faculty_stop_attendance(class_id):
-    if not session.get('user_id') or session.get('role_id') != 2:
-        return redirect('/login')
-
-    from database import get_connection
-    conn = get_connection()
-    if conn:
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT faculty_id FROM faculty WHERE user_id = %s", (session['user_id'],))
-        fac = cursor.fetchone()
-        if fac:
-            cursor.execute("""
-                SELECT c.*, s.subject_name, s.subject_code
-                FROM classes c
-                JOIN subjects s ON c.subject_id = s.subject_id
-                WHERE c.class_id = %s AND c.faculty_id = %s
-            """, (class_id, fac['faculty_id']))
-            cls = cursor.fetchone()
-            if cls:
-                # End attendance
-                cursor.execute('UPDATE classes SET attendance_started = 0 WHERE class_id = %s', (class_id,))
-                
-                # Fetch all students enrolled in the class's course and semester
-                cursor.execute("""
-                    SELECT st.student_id 
-                    FROM students st
-                    JOIN subjects s ON st.course_id = s.course_id AND st.semester_id = s.semester_id
-                    WHERE s.subject_id = %s
-                """, (cls['subject_id'],))
-                enrolled_students = cursor.fetchall()
-                
-                from datetime import datetime
-                # Insert 'Absent' for all enrolled students who don't have a record
-                for student in enrolled_students:
-                    cursor.execute("""
-                        INSERT INTO attendance (student_id, class_id, status, attendance_time, confidence_score)
-                        VALUES (%s, %s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE student_id=student_id
-                    """, (student['student_id'], class_id, 'Absent', datetime.now(), 0.0))
-                    
-                conn.commit()
-                from flask import flash, url_for, redirect
-                flash("Attendance successfully closed and absent records updated.", "success")
-                cursor.close()
-                conn.close()
-                return redirect(url_for('faculty_classes'))
-
-        cursor.close()
-        conn.close()
-    return redirect(url_for('faculty_classes'))
 
 @app.route('/api/get_live_attendance/<int:class_id>')
 def get_live_attendance(class_id):
@@ -1590,9 +1578,9 @@ def student_dashboard():
                 e_dt = dt.datetime.combine(today_date, (dt.datetime.min + c['end_time']).time())
                 
                 if s_dt.time() <= current_time <= e_dt.time():
-                    if c['attendance_started'] == 1 or now >= (s_dt + dt.timedelta(minutes=10)):
+                    if c['attendance_started'] == 1:
                         cursor.execute("SELECT * FROM attendance WHERE student_id = %s AND class_id = %s", (student['student_id'], c['class_id']))
-                        if not cursor.fetchone():
+                        if not cursor.fetchall():
                             live_classes.append(c)
                             
         cursor.close()
@@ -1654,13 +1642,10 @@ def student_classes():
                     elif current_time < s_time:
                         upcoming_classes.append(c)
                     else:
-                        s_dt = dt.datetime.combine(today_date, s_time)
-                        if c['attendance_started'] == 1 or now >= (s_dt + dt.timedelta(minutes=10)):
-                            c['is_attendance_open'] = True
+                        c['is_attendance_open'] = (c['attendance_started'] == 1)
+                        if c['is_attendance_open']:
                             cursor.execute("SELECT * FROM attendance WHERE student_id = %s AND class_id = %s", (student['student_id'], c['class_id']))
-                            c['already_marked'] = bool(cursor.fetchone())
-                        else:
-                            c['is_attendance_open'] = False
+                            c['already_marked'] = bool(cursor.fetchall())
                         live_classes.append(c)
                         
         cursor.close()
@@ -1824,15 +1809,21 @@ def student_mark_attendance(class_id):
             return redirect(url_for('student_profile'))
             
         student_id = student['student_id']
-        cursor.execute('''
+        cursor.execute("""
             SELECT c.*, s.subject_name, s.subject_code 
             FROM classes c
             JOIN subjects s ON c.subject_id = s.subject_id
             WHERE c.class_id = %s
-        ''', (class_id,))
+        """, (class_id,))
         cls = cursor.fetchone()
+        
+        if cls and not cls.get('attendance_started'):
+            cursor.close()
+            conn.close()
+            from flask import flash, url_for, redirect
+            flash("Attendance has not been started by the faculty yet or has already ended.", "danger")
+            return redirect(url_for('student_classes'))
 
-         
         if request.method == 'POST' and cls:
             face_data = request.form.get('face_data')
             if face_data:
@@ -1913,16 +1904,19 @@ def student_mark_attendance(class_id):
                         
                     known_encoding = np.array(json.loads(saved_face['face_encoding']))
                     
-                    # Use standard tolerance of 0.45 or 0.5 for strictness
-                    matches = face_recognition.compare_faces([known_encoding], new_encoding, tolerance=0.45)
+                    # Use tolerance of 0.55 for strictness but allowing slight lighting variations
+                    matches = face_recognition.compare_faces([known_encoding], new_encoding, tolerance=0.55)
                     
                     if matches[0]:
+                        distance = face_recognition.face_distance([known_encoding], new_encoding)[0]
+                        confidence_score = max(0.0, (1.0 - distance) * 100)
+                        
                         # 6. Insert/Update Attendance Record
                         cursor.execute('''
-                            INSERT INTO attendance (student_id, class_id, status, attendance_time)
-                            VALUES (%s, %s, %s, %s)
-                            ON DUPLICATE KEY UPDATE status = %s, attendance_time = %s
-                        ''', (student_id, class_id, 'Present', datetime.now(), 'Present', datetime.now()))
+                            INSERT INTO attendance (student_id, class_id, status, attendance_time, confidence_score)
+                            VALUES (%s, %s, %s, %s, %s)
+                            ON DUPLICATE KEY UPDATE status = %s, attendance_time = %s, confidence_score = %s
+                        ''', (student_id, class_id, 'Present', datetime.now(), float(confidence_score), 'Present', datetime.now(), float(confidence_score)))
                         conn.commit()
                         
                         flash("Attendance verified and marked successfully!", "success")
