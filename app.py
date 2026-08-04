@@ -470,6 +470,7 @@ def face_registration():
 
                     
                     
+                    
                     cursor.execute('''
                         INSERT INTO face_data (student_id, image_path, face_encoding) 
                         VALUES (%s, %s, %s) 
@@ -1173,6 +1174,59 @@ def faculty_start_attendance(class_id):
         return redirect(url_for('faculty_classes'))
     return redirect('/login')
 
+
+@app.route('/faculty_stop_attendance/<int:class_id>')
+def faculty_stop_attendance(class_id):
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return redirect('/login')
+
+    from database import get_connection
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT faculty_id FROM faculty WHERE user_id = %s", (session['user_id'],))
+        fac = cursor.fetchone()
+        if fac:
+            cursor.execute("""
+                SELECT c.*, s.subject_name, s.subject_code
+                FROM classes c
+                JOIN subjects s ON c.subject_id = s.subject_id
+                WHERE c.class_id = %s AND c.faculty_id = %s
+            """, (class_id, fac['faculty_id']))
+            cls = cursor.fetchone()
+            if cls:
+                # End attendance
+                cursor.execute('UPDATE classes SET attendance_started = 0 WHERE class_id = %s', (class_id,))
+                
+                # Fetch all students enrolled in the class's course and semester
+                cursor.execute("""
+                    SELECT st.student_id 
+                    FROM students st
+                    JOIN subjects s ON st.course_id = s.course_id AND st.semester_id = s.semester_id
+                    WHERE s.subject_id = %s
+                """, (cls['subject_id'],))
+                enrolled_students = cursor.fetchall()
+                
+                from datetime import datetime
+                # Insert 'Absent' for all enrolled students who don't have a record
+                for student in enrolled_students:
+                    cursor.execute("""
+                        INSERT INTO attendance (student_id, class_id, status, attendance_time, confidence_score)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE student_id=student_id
+                    """, (student['student_id'], class_id, 'Absent', datetime.now(), 0.0))
+                    
+                conn.commit()
+                from flask import flash, url_for, redirect
+                flash("Attendance successfully closed and absent records updated.", "success")
+                cursor.close()
+                conn.close()
+                return redirect(url_for('faculty_classes'))
+
+        cursor.close()
+        conn.close()
+    return redirect(url_for('faculty_classes'))
+
 @app.route('/api/get_live_attendance/<int:class_id>')
 def get_live_attendance(class_id):
     if not session.get('user_id') or session.get('role_id') != 2:
@@ -1750,7 +1804,7 @@ def student_profile_update():
         
     return redirect(url_for('student_profile'))
 
-@app.route('/student_mark_attendance/<int:class_id>')
+@app.route('/student_mark_attendance/<int:class_id>', methods=['GET', 'POST'])
 def student_mark_attendance(class_id):
     if not session.get('user_id') or session.get('role_id') != 3:
         return redirect('/login')
@@ -1761,7 +1815,7 @@ def student_mark_attendance(class_id):
         cursor = conn.cursor(dictionary=True)
         
         # Verify face is registered
-        cursor.execute("SELECT face_registered FROM students WHERE user_id = %s", (session['user_id'],))
+        cursor.execute("SELECT student_id, face_registered FROM students WHERE user_id = %s", (session['user_id'],))
         student = cursor.fetchone()
         if not student or not student.get('face_registered'):
             cursor.close()
@@ -1769,6 +1823,7 @@ def student_mark_attendance(class_id):
             flash("You must register your face first before marking attendance.", "danger")
             return redirect(url_for('student_profile'))
             
+        student_id = student['student_id']
         cursor.execute('''
             SELECT c.*, s.subject_name, s.subject_code 
             FROM classes c
@@ -1776,6 +1831,115 @@ def student_mark_attendance(class_id):
             WHERE c.class_id = %s
         ''', (class_id,))
         cls = cursor.fetchone()
+
+         
+        if request.method == 'POST' and cls:
+            face_data = request.form.get('face_data')
+            if face_data:
+                try:
+                    import base64
+                    import numpy as np
+                    import cv2
+                    import face_recognition
+                    import json
+                    from datetime import datetime
+                    
+                    # 1. Decode base64 image
+                    header, encoded = face_data.split(",", 1)
+                    decoded = base64.b64decode(encoded)
+                    nparr = np.frombuffer(decoded, np.uint8)
+                    img_cv2 = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    
+                    # 2. Check for faces
+                    image_array = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2RGB)
+                    face_locations = face_recognition.face_locations(image_array)
+                    
+                    if len(face_locations) == 0:
+                        flash("No face detected! Please ensure your face is clearly visible.", "danger")
+                        return redirect(url_for('student_mark_attendance', class_id=class_id))
+                    if len(face_locations) > 1:
+                        flash("Multiple faces detected! Only one person should be in the frame.", "danger")
+                        return redirect(url_for('student_mark_attendance', class_id=class_id))
+                        
+                    # 3. Liveness / Spoofing Pipeline
+                    gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+                    
+                    # A. Blur Detection (Laplacian Variance)
+                    variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+                    if variance < 15:
+                        flash("Spoofing Detected: Image is too blurry (Possible printed photo).", "danger")
+                        return redirect(url_for('student_mark_attendance', class_id=class_id))
+                        
+                    # B. Screen Edge Detection (Hough Lines)
+                    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+                    lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold=150, minLineLength=100, maxLineGap=10)
+                    if lines is not None and len(lines) > 4:
+                        flash("Spoofing Detected: Rectangular edges found. Are you holding a phone/screen?", "danger")
+                        return redirect(url_for('student_mark_attendance', class_id=class_id))
+                        
+                    # C. Glare Detection (Flash/Screen backlight)
+                    overexposed_pixels = np.sum(gray > 240)
+                    if (overexposed_pixels / gray.size) > 0.15:
+                        flash("Spoofing Detected: Extreme glare/reflection found.", "danger")
+                        return redirect(url_for('student_mark_attendance', class_id=class_id))
+                        
+                    # D. Occlusion Check (Masks)
+                    landmarks = face_recognition.face_landmarks(image_array, face_locations)
+                    if len(landmarks) > 0:
+                        lm = landmarks[0]
+                        
+                        if 'bottom_lip' in lm and 'top_lip' in lm:
+                            mouth_pts = np.vstack((np.array(lm['bottom_lip']), np.array(lm['top_lip'])))
+                            mx, my, mw, mh = cv2.boundingRect(mouth_pts)
+                            pad_m = 10
+                            my1, my2 = max(0, my - pad_m), min(img_cv2.shape[0], my + mh + pad_m)
+                            mx1, mx2 = max(0, mx - pad_m), min(img_cv2.shape[1], mx + mw + pad_m)
+                            mouth_roi = gray[my1:my2, mx1:mx2]
+                            if mouth_roi.size > 0:
+                                mouth_var = cv2.Laplacian(mouth_roi, cv2.CV_64F).var()
+                                if mouth_var < 15:
+                                    flash("Face mask detected! Please remove your mask.", "danger")
+                                    return redirect(url_for('student_mark_attendance', class_id=class_id))
+                    # 4. Extract Face Encoding
+                    new_encoding = face_recognition.face_encodings(image_array, known_face_locations=face_locations)[0]
+                    
+                    # 5. Compare with registered face
+                    cursor.execute("SELECT face_encoding FROM face_data WHERE student_id = %s", (student_id,))
+                    saved_face = cursor.fetchone()
+                    
+                    if not saved_face or not saved_face['face_encoding']:
+                        flash("Your registered face data could not be found. Contact admin.", "danger")
+                        return redirect(url_for('student_mark_attendance', class_id=class_id))
+                        
+                    known_encoding = np.array(json.loads(saved_face['face_encoding']))
+                    
+                    # Use standard tolerance of 0.45 or 0.5 for strictness
+                    matches = face_recognition.compare_faces([known_encoding], new_encoding, tolerance=0.45)
+                    
+                    if matches[0]:
+                        # 6. Insert/Update Attendance Record
+                        cursor.execute('''
+                            INSERT INTO attendance (student_id, class_id, status, attendance_time)
+                            VALUES (%s, %s, %s, %s)
+                            ON DUPLICATE KEY UPDATE status = %s, attendance_time = %s
+                        ''', (student_id, class_id, 'Present', datetime.now(), 'Present', datetime.now()))
+                        conn.commit()
+                        
+                        flash("Attendance verified and marked successfully!", "success")
+                        return redirect(url_for('student_classes'))
+                    else:
+                        flash("Face verification failed. The face does not match your registered profile.", "danger")
+                        return redirect(url_for('student_mark_attendance', class_id=class_id))
+                        
+                except Exception as e:
+                    flash(f"An error occurred during verification: {e}", "danger")
+                    return redirect(url_for('student_mark_attendance', class_id=class_id))
+            else:
+                flash("No face data received.", "danger")
+                return redirect(url_for('student_mark_attendance', class_id=class_id))
+        cursor.close()
+        conn.close()
+
         cursor.close()
         conn.close()
         
