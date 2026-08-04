@@ -1232,6 +1232,86 @@ def faculty_attendance():
         return render_template('faculty_attendance.html', attendances=attendances)
     return redirect('/login')
 
+@app.route('/faculty_students')
+def faculty_students():
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return redirect('/login')
+        
+    conn = get_connection()
+    students = []
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT faculty_id FROM faculty WHERE user_id = %s", (session['user_id'],))
+        fac = cursor.fetchone()
+        
+        if fac:
+            # Get distinct students enrolled in subjects taught by this faculty
+            cursor.execute('''
+                SELECT DISTINCT st.student_id, u.full_name, u.email, u.profile_img, c.course_name, sem.semester_name
+                FROM students st
+                JOIN users u ON st.user_id = u.user_id
+                JOIN courses c ON st.course_id = c.course_id
+                JOIN semesters sem ON st.semester_id = sem.semester_id
+                JOIN subjects sub ON sub.course_id = c.course_id AND sub.semester_id = sem.semester_id
+                WHERE sub.faculty_id = %s
+                ORDER BY u.full_name
+            ''', (fac['faculty_id'],))
+            students = cursor.fetchall()
+            
+        cursor.close()
+        conn.close()
+        
+    return render_template('faculty_students.html', students=students)
+
+@app.route('/faculty_student_detail/<int:student_id>')
+def faculty_student_detail(student_id):
+    if not session.get('user_id') or session.get('role_id') != 2:
+        return redirect('/login')
+        
+    conn = get_connection()
+    student_info = None
+    attendances = []
+    
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT faculty_id FROM faculty WHERE user_id = %s", (session['user_id'],))
+        fac = cursor.fetchone()
+        
+        if fac:
+            # Get student info
+            cursor.execute('''
+                SELECT st.student_id, u.full_name, u.email, u.profile_img, c.course_name, sem.semester_name, st.face_registered
+                FROM students st
+                JOIN users u ON st.user_id = u.user_id
+                JOIN courses c ON st.course_id = c.course_id
+                JOIN semesters sem ON st.semester_id = sem.semester_id
+                WHERE st.student_id = %s
+            ''', (student_id,))
+            student_info = cursor.fetchone()
+            
+            if student_info:
+                # Get attendance only for subjects taught by this faculty member
+                cursor.execute('''
+                    SELECT a.attendance_time, a.status, c.class_date, s.subject_name, s.subject_code
+                    FROM attendance a
+                    JOIN classes c ON a.class_id = c.class_id
+                    JOIN subjects s ON c.subject_id = s.subject_id
+                    WHERE a.student_id = %s AND c.faculty_id = %s
+                    ORDER BY c.class_date DESC, a.attendance_time DESC
+                ''', (student_id, fac['faculty_id']))
+                attendances = cursor.fetchall()
+                for a in attendances:
+                    if a['class_date']: a['class_date'] = str(a['class_date'])
+                    
+        cursor.close()
+        conn.close()
+        
+    if not student_info:
+        flash("Student not found or access denied.", "danger")
+        return redirect(url_for('faculty_students'))
+        
+    return render_template('faculty_student_detail.html', student=student_info, attendances=attendances)
+
 @app.route('/faculty_profile')
 def faculty_profile():
     if not session.get('user_id') or session.get('role_id') != 2:

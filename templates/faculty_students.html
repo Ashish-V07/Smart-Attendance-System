@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>My Students - Smart Attendance System</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='fonts/themify-icons.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+	<style>
+		.student-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
+		.btn-action { padding: 5px 12px; font-size: 13px; border-radius: 5px; background: var(--primary-color); color: white; border: none; transition: 0.3s; }
+		.btn-action:hover { background: #2b8b2d; color: white; }
+	</style>
+</head>
+<body>
+	{% include 'components/faculty_sidebar.html' %}
+
+	<main class="main-content" id="main-content">
+		{% include 'components/admin_header.html' %}
+		
+		<div class="dashboard-container">
+			{% include 'components/Error_Show.html' %}
+			<div class="page-title d-flex justify-content-between align-items-center">
+				<h2>My Enrolled Students</h2>
+			</div>
+
+			<div class="row">
+				<div class="col-12">
+					<div class="table-card">
+						<div class="card-body">
+							<div class="table-responsive">
+								<table class="table table-hover align-middle">
+									<thead class="table-light">
+										<tr>
+											<th>Student</th>
+											<th>Email</th>
+											<th>Course</th>
+											<th>Semester</th>
+											<th class="text-center">Action</th>
+										</tr>
+									</thead>
+									<tbody>
+										{% for st in students %}
+										<tr>
+											<td>
+												<div class="d-flex align-items-center">
+													<img src="{{ st.profile_img or '/assets/img/Users/Student/Default.jpg' }}" alt="avatar" class="student-avatar">
+													<strong>{{ st.full_name }}</strong>
+												</div>
+											</td>
+											<td>{{ st.email }}</td>
+											<td><span class="badge bg-info text-white">{{ st.course_name }}</span></td>
+											<td>Sem {{ st.semester_name }}</td>
+											<td class="text-center">
+												<a href="{{ url_for('faculty_student_detail', student_id=st.student_id) }}" class="btn-action text-decoration-none">
+													<i class="ti-eye"></i> View Details
+												</a>
+											</td>
+										</tr>
+										{% else %}
+										<tr>
+											<td colspan="5" class="text-center text-muted py-4">No students are enrolled in your classes yet.</td>
+										</tr>
+										{% endfor %}
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+		$(document).ready(function () {
+			$('#mobile-toggle').click(function () {
+				$('#sidebar').toggleClass('active');
+			});
+		});
+	</script>
+</body>
+</html>
