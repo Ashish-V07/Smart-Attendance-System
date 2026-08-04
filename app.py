@@ -1605,7 +1605,8 @@ def student_classes():
     if conn:
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT student_id, course_id, semester_id, face_registered FROM students WHERE user_id = %s", (session['user_id'],))
-        student = cursor.fetchone()
+        student_results = cursor.fetchall()
+        student = student_results[0] if student_results else None
         
         if student:
             face_registered = student.get('face_registered', 0)
@@ -1668,7 +1669,8 @@ def student_attendance():
     if conn:
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT student_id, course_id, semester_id FROM students WHERE user_id = %s", (session['user_id'],))
-        student = cursor.fetchone()
+        student_results = cursor.fetchall()
+        student = student_results[0] if student_results else None
         
         if student:
             cursor.execute('''
@@ -1801,7 +1803,8 @@ def student_mark_attendance(class_id):
         
         # Verify face is registered
         cursor.execute("SELECT student_id, face_registered FROM students WHERE user_id = %s", (session['user_id'],))
-        student = cursor.fetchone()
+        student_results = cursor.fetchall()
+        student = student_results[0] if student_results else None
         if not student or not student.get('face_registered'):
             cursor.close()
             conn.close()
@@ -1815,12 +1818,12 @@ def student_mark_attendance(class_id):
             JOIN subjects s ON c.subject_id = s.subject_id
             WHERE c.class_id = %s
         """, (class_id,))
-        cls = cursor.fetchone()
+        cls_results = cursor.fetchall()
+        cls = cls_results[0] if cls_results else None
         
         if cls and not cls.get('attendance_started'):
             cursor.close()
             conn.close()
-            from flask import flash, url_for, redirect
             flash("Attendance has not been started by the faculty yet or has already ended.", "danger")
             return redirect(url_for('student_classes'))
 
@@ -1896,7 +1899,8 @@ def student_mark_attendance(class_id):
                     
                     # 5. Compare with registered face
                     cursor.execute("SELECT face_encoding FROM face_data WHERE student_id = %s", (student_id,))
-                    saved_face = cursor.fetchone()
+                    saved_face_results = cursor.fetchall()
+                    saved_face = saved_face_results[0] if saved_face_results else None
                     
                     if not saved_face or not saved_face['face_encoding']:
                         flash("Your registered face data could not be found. Contact admin.", "danger")
