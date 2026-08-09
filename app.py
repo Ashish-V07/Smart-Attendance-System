@@ -1063,6 +1063,80 @@ def delete_class(class_id):
             conn.close()
     return redirect(url_for('admin_classes'))
 
+@app.route('/admin/attendance', methods=['GET'])
+def admin_attendance():
+    if 'user_id' not in session or session.get('role_id') != 1:
+        return redirect('/login')
+
+    filter_date = request.args.get('date', '')
+    filter_subject = request.args.get('subject_id', '')
+    filter_status = request.args.get('status', '')
+
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("SELECT subject_id, subject_name FROM subjects ORDER BY subject_name")
+        subjects = cursor.fetchall()
+
+        query = '''
+            SELECT a.attendance_id, a.attendance_time, a.status, a.confidence_score,
+                   u.full_name, u.profile_img, s.subject_name, c.class_date, c.start_time, c.end_time
+            FROM attendance a
+            JOIN students st ON a.student_id = st.student_id
+            JOIN users u ON st.user_id = u.user_id
+            JOIN classes c ON a.class_id = c.class_id
+            JOIN subjects s ON c.subject_id = s.subject_id
+            WHERE 1=1
+        '''
+        params = []
+        
+        if filter_date:
+            query += " AND c.class_date = %s"
+            params.append(filter_date)
+        if filter_subject:
+            query += " AND s.subject_id = %s"
+            params.append(filter_subject)
+        if filter_status:
+            query += " AND a.status = %s"
+            params.append(filter_status)
+            
+        query += " ORDER BY c.class_date DESC, c.start_time DESC LIMIT 500"
+        
+        cursor.execute(query, tuple(params))
+        attendance_logs = cursor.fetchall()
+        
+        total_logs = len(attendance_logs)
+        total_present = sum(1 for log in attendance_logs if str(log['status']).lower() == 'present')
+        total_absent = sum(1 for log in attendance_logs if str(log['status']).lower() == 'absent')
+        total_late = sum(1 for log in attendance_logs if str(log['status']).lower() == 'late')
+        
+        avg_confidence = 0
+        present_logs = [log for log in attendance_logs if str(log['status']).lower() == 'present' and log['confidence_score']]
+        if present_logs:
+            avg_confidence = round(sum(log['confidence_score'] for log in present_logs) / len(present_logs), 2)
+            
+        overall_percentage = 0
+        if total_logs > 0:
+            overall_percentage = round((total_present / total_logs) * 100)
+
+        cursor.close()
+        conn.close()
+        
+        return render_template('admin_attendance.html',
+                               attendance_logs=attendance_logs,
+                               subjects=subjects,
+                               filter_date=filter_date,
+                               filter_subject=int(filter_subject) if filter_subject else '',
+                               filter_status=filter_status,
+                               total_logs=total_logs,
+                               total_present=total_present,
+                               total_absent=total_absent,
+                               total_late=total_late,
+                               overall_percentage=overall_percentage,
+                               avg_confidence=avg_confidence)
+    return redirect('/login')
+
 # --- FACULTY MODULES ---
 @app.route('/faculty_dashboard')
 def faculty_dashboard():
