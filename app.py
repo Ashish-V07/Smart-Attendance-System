@@ -1131,7 +1131,7 @@ def faculty_classes():
         fac = cursor.fetchone()
         if fac:
             cursor.execute('''
-                SELECT c.class_id, c.class_date, c.start_time, c.end_time, c.attendance_started,
+                SELECT c.class_id, c.class_date, c.start_time, c.end_time, c.attendance_started, c.subject_id,
                        s.subject_name, s.subject_code
                 FROM classes c
                 LEFT JOIN subjects s ON c.subject_id = s.subject_id
@@ -1150,6 +1150,29 @@ def faculty_classes():
             
             for c in all_classes:
                 c_date = c['class_date']
+                
+                # Fetch statistics
+                cursor.execute('''
+                    SELECT COUNT(*) as total_students 
+                    FROM students st 
+                    JOIN subjects s ON st.course_id = s.course_id AND st.semester_id = s.semester_id 
+                    WHERE s.subject_id = %s
+                ''', (c['subject_id'],))
+                tot_res = cursor.fetchall()
+                c['total_students'] = tot_res[0]['total_students'] if tot_res else 0
+
+                cursor.execute('''
+                    SELECT COUNT(*) as present_students
+                    FROM attendance 
+                    WHERE class_id = %s AND status = 'Present'
+                ''', (c['class_id'],))
+                pres_res = cursor.fetchall()
+                c['present_students'] = pres_res[0]['present_students'] if pres_res else 0
+
+                if c['total_students'] > 0:
+                    c['present_percentage'] = round((c['present_students'] / c['total_students']) * 100)
+                else:
+                    c['present_percentage'] = 0
                 # Start and end are timedelta, convert to time
                 s_time = (datetime.datetime.min + c['start_time']).time()
                 e_time = (datetime.datetime.min + c['end_time']).time()

@@ -35,6 +35,7 @@
 								<th>Time</th>
 								<th>Subject</th>
 								<th>Subject Code</th>
+								<th>Attendance</th>
 								<th>Action</th>
 							</tr>
 						</thead>
@@ -46,6 +47,14 @@
 								<td>{{ cls.subject_name }}</td>
 								<td>{{ cls.subject_code }}</td>
 								<td>
+									{% if cls.total_students > 0 %}
+										<span class="badge {% if cls.present_percentage >= 75 %}bg-success{% elif cls.present_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %} text-dark">{{ cls.present_percentage }}%</span>
+										<small class="text-muted ms-1">({{ cls.present_students }}/{{ cls.total_students }})</small>
+									{% else %}
+										<small class="text-muted">0 Enrolled</small>
+									{% endif %}
+								</td>
+								<td>
 									{% if cls.is_attendance_open %}
 									<a href="{{ url_for('faculty_start_attendance', class_id=cls.class_id) }}" class="btn-custom bg-info text-white" style="text-decoration: none;"><i class="ti-eye me-1"></i> Monitor</a>
 									{% else %}
@@ -55,7 +64,7 @@
 							</tr>
 							{% else %}
 							<tr>
-								<td colspan="5" class="text-center text-muted py-3">No classes currently live.</td>
+								<td colspan="6" class="text-center text-muted py-3">No classes currently live.</td>
 							</tr>
 							{% endfor %}
 						</tbody>
@@ -76,6 +85,7 @@
 								<th>Time</th>
 								<th>Subject</th>
 								<th>Subject Code</th>
+								<th>Attendance</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -85,10 +95,18 @@
 								<td>{{ cls.start_time_str }} - {{ cls.end_time_str }}</td>
 								<td>{{ cls.subject_name }}</td>
 								<td>{{ cls.subject_code }}</td>
+								<td>
+									{% if cls.total_students > 0 %}
+										<span class="badge {% if cls.present_percentage >= 75 %}bg-success{% elif cls.present_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %} text-dark">{{ cls.present_percentage }}%</span>
+										<small class="text-muted ms-1">({{ cls.present_students }}/{{ cls.total_students }})</small>
+									{% else %}
+										<small class="text-muted">0 Enrolled</small>
+									{% endif %}
+								</td>
 							</tr>
 							{% else %}
 							<tr>
-								<td colspan="4" class="text-center text-muted py-3">No more upcoming classes today.</td>
+								<td colspan="5" class="text-center text-muted py-3">No more upcoming classes today.</td>
 							</tr>
 							{% endfor %}
 						</tbody>
@@ -109,6 +127,7 @@
 								<th>Time</th>
 								<th>Subject</th>
 								<th>Subject Code</th>
+								<th>Attendance</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -118,10 +137,18 @@
 								<td>{{ cls.start_time_str }} - {{ cls.end_time_str }}</td>
 								<td>{{ cls.subject_name }}</td>
 								<td>{{ cls.subject_code }}</td>
+								<td>
+									{% if cls.total_students > 0 %}
+										<span class="badge {% if cls.present_percentage >= 75 %}bg-success{% elif cls.present_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %} text-dark">{{ cls.present_percentage }}%</span>
+										<small class="text-muted ms-1">({{ cls.present_students }}/{{ cls.total_students }})</small>
+									{% else %}
+										<small class="text-muted">0 Enrolled</small>
+									{% endif %}
+								</td>
 							</tr>
 							{% else %}
 							<tr>
-								<td colspan="4" class="text-center text-muted py-3">No past classes.</td>
+								<td colspan="5" class="text-center text-muted py-3">No past classes.</td>
 							</tr>
 							{% endfor %}
 						</tbody>
