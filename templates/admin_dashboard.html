@@ -432,68 +432,45 @@
 				</div>
 			</div>
 
-			<!-- Recent Activity Table -->
-			<div class="row">
-				<div class="col-12">
-					<div class="table-card">
-						<div class="table-header">
-							<h4>Recent Check-ins</h4>
-							<button class="btn-custom">View All Logs</button>
+			<!-- Today's Stats -->
+			<div class="row mb-4">
+				<div class="col-xl-4 col-lg-4 col-md-6 mb-3">
+					<div class="summary-card h-100" style="border-left: 4px solid #2196f3; margin-bottom: 0;">
+						<div class="summary-info">
+							<h5>Today's Classes</h5>
+							<h3>{{ today_classes }}</h3>
 						</div>
-						<div class="table-responsive">
-							<table class="table table-hover">
-								<thead>
-									<tr>
-										<th>Name</th>
-										<th>Role</th>
-										<th>Time</th>
-										<th>Method</th>
-										<th>Status</th>
-									</tr>
-								</thead>
-								<tbody>
-									{% if recent_attendance %}
-									{% for record in recent_attendance %}
-									<tr>
-										<td>
-											<div class="d-flex align-items-center">
-												{% if record.profile_img %}
-												<img src="{{ record.profile_img }}" alt="img"
-													style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px;">
-												{% else %}
-												<img src="{{ url_for('static', filename='/assets/img/Users/Student/Default.jpg') }}"
-													alt="img"
-													style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px;">
-												{% endif %}
-												{{ record.full_name }}
-											</div>
-										</td>
-										<td>{{ record.role_name }}</td>
-										<td>{{ record.attendance_time.strftime('%I:%M %p, %b %d') if
-											record.attendance_time else '--' }}</td>
-										<td>Face AI</td>
-										<td>
-											{% if record.status|lower == 'present' %}
-											<span class="status-badge status-present">Present</span>
-											{% elif record.status|lower == 'late' %}
-											<span class="status-badge status-late">Late</span>
-											{% else %}
-											<span class="status-badge status-absent">{{ record.status }}</span>
-											{% endif %}
-										</td>
-									</tr>
-									{% endfor %}
-									{% else %}
-									<tr>
-										<td colspan="5" class="text-center py-4">No recent check-ins found.</td>
-									</tr>
-									{% endif %}
-								</tbody>
-							</table>
+						<div class="summary-icon icon-blue">
+							<i class="ti-blackboard"></i>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-4 col-lg-4 col-md-6 mb-3">
+					<div class="summary-card h-100" style="border-left: 4px solid var(--primary-color); margin-bottom: 0;">
+						<div class="summary-info">
+							<h5>Today's Present Students</h5>
+							<h3>{{ today_present }}</h3>
+						</div>
+						<div class="summary-icon icon-green">
+							<i class="ti-check-box"></i>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-4 col-lg-4 col-md-12 mb-3">
+					<div class="summary-card h-100" style="border-left: 4px solid #f44336; margin-bottom: 0;">
+						<div class="summary-info">
+							<h5>Pending Registrations</h5>
+							<h3>{{ pending_faces }}</h3>
+						</div>
+						<div class="summary-icon icon-red">
+							<i class="ti-id-badge"></i>
 						</div>
 					</div>
 				</div>
 			</div>
+
+
+		</div>
 		</div>
 	</main>
 

@@ -254,6 +254,20 @@ def admin_dashboard():
         cursor.execute("SELECT COUNT(*) as count FROM feedback")
         total_feedbacks = cursor.fetchone()['count']
         
+        cursor.execute("SELECT COUNT(*) as count FROM classes WHERE class_date = CURDATE()")
+        today_classes = cursor.fetchone()['count']
+
+        cursor.execute('''
+            SELECT COUNT(*) as count 
+            FROM attendance a
+            JOIN classes c ON a.class_id = c.class_id
+            WHERE c.class_date = CURDATE() AND a.status = 'Present'
+        ''')
+        today_present = cursor.fetchone()['count']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM students WHERE face_registered = 0")
+        pending_faces = cursor.fetchone()['count']
+        
         cursor.execute('''
             SELECT u.full_name, r.role_name, a.attendance_time, a.status, u.profile_img 
             FROM attendance a
@@ -273,6 +287,9 @@ def admin_dashboard():
                                total_faculty=total_faculty,
                                total_courses=total_courses,
                                total_feedbacks=total_feedbacks,
+                               today_classes=today_classes,
+                               today_present=today_present,
+                               pending_faces=pending_faces,
                                recent_attendance=recent_attendance)
     else:
         return redirect(url_for('login'))
