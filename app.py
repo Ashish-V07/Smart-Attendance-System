@@ -921,9 +921,16 @@ def delete_subject(subject_id):
     if conn:
         cursor = conn.cursor()
         try:
-            cursor.execute("DELETE FROM subjects WHERE subject_id = %s", (subject_id,))
-            conn.commit()
-            flash('Subject deleted successfully!', 'success')
+            cursor.execute("select class_id from classes where subject_id=%s",(subject_id,))
+            classes=cursor.fetchall()
+
+            if(classes):
+                flash('Subject have already assigned classes!', 'danger')
+            else:
+                cursor.execute("DELETE FROM subjects WHERE subject_id = %s", (subject_id,))
+                conn.commit()
+                flash('Subject deleted successfully!', 'success')
+            
         except Exception as err:
             flash(f'Error deleting subject (might be referenced in classes): {err}', 'danger')
         finally:
