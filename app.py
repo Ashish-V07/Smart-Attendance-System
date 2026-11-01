@@ -51,12 +51,13 @@ def auto_close_expired_classes():
                 enrolled_students = cursor.fetchall()
                 
                 for student in enrolled_students:
-                    cursor.execute('''
-                        INSERT INTO attendance (student_id, class_id, status, attendance_time, confidence_score)
+                     cursor.execute('''
+                        INSERT INTO attendance
+                        (student_id, class_id, status, attendance_time, confidence_score)
                         VALUES (%s, %s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE student_id=student_id
-                    ''', (student['student_id'], cls['class_id'], 'Absent', datetime.now(), 0.0))
-                    
+                        ON DUPLICATE KEY UPDATE
+                        attendance_id = attendance_id
+                         ''', ( student['student_id'],cls['class_id'],'Absent',datetime.now(),0.0))    
             conn.commit()
         cursor.close()
         conn.close()
